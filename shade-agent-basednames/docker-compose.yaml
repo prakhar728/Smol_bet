@@ -1,0 +1,23 @@
+services:
+    web:
+        environment:
+            BASE_API_KEY: ${BASE_API_KEY}
+            TWITTER_API_KEY: ${TWITTER_API_KEY}
+            TWITTER_API_SECRET: ${TWITTER_API_SECRET}
+            TWITTER_CLIENT_KEY: ${TWITTER_CLIENT_KEY}
+            TWITTER_CLIENT_SECRET: ${TWITTER_CLIENT_SECRET}
+            TWITTER_ACCESS_TOKEN: ${TWITTER_ACCESS_TOKEN}
+            TWITTER_REFRESH_TOKEN: ${TWITTER_REFRESH_TOKEN}
+            TWITTER_LAST_TIMESTAMP: ${TWITTER_LAST_TIMESTAMP}
+            NEXT_PUBLIC_contractId: ${NEXT_PUBLIC_contractId}
+            MPC_PUBLIC_KEY_TESTNET: ${MPC_PUBLIC_KEY_TESTNET}
+            MPC_PUBLIC_KEY_MAINNET: ${MPC_PUBLIC_KEY_MAINNET}
+            RESTART_PASS: ${RESTART_PASS}
+        platform: linux/amd64 # Explicitly set for TDX
+        image: mattdlockyer/shade-agent-basednames:latest@sha256:61923f6f77b607c96420d253e4eaa0764a125728cbe501a95c4477cb2a5e2351
+        container_name: web
+        ports:
+            - '3000:3000'
+        volumes:
+            - /var/run/tappd.sock:/var/run/tappd.sock
+        restart: always
