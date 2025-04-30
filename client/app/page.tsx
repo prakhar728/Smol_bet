@@ -7,7 +7,7 @@ export default function LandingPage() {
   return (
     <div className="flex min-h-screen flex-col">
       <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-16 items-center space-x-4 sm:justify-between sm:space-x-0">
+        <div className="container flex h-16 items-center space-x-4 sm:justify-between sm:space-x-0 mx-auto">
           <div className="flex gap-6 md:gap-10">
             <Link href="/" className="flex items-center space-x-2">
               <Shield className="h-6 w-6" />
@@ -50,7 +50,7 @@ export default function LandingPage() {
       </header>
       <main className="flex-1">
         <section className="space-y-6 pb-8 pt-6 md:pb-12 md:pt-10 lg:py-32">
-          <div className="container flex max-w-[64rem] flex-col items-center gap-4 text-center">
+          <div className="container flex max-w-[64rem] flex-col items-center gap-4 text-center mx-auto">
             <div className="space-y-2">
               <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl">
                 Bet on Anything. With Anyone. On-Chain.
@@ -80,7 +80,7 @@ export default function LandingPage() {
 
         <section
           id="how-it-works"
-          className="container space-y-6 bg-slate-50 py-8 dark:bg-transparent md:py-12 lg:py-24"
+          className="container space-y-6 bg-slate-50 py-8 dark:bg-transparent md:py-12 lg:py-24 mx-auto"
         >
           <div className="mx-auto flex max-w-[58rem] flex-col items-center space-y-4 text-center">
             <h2 className="text-3xl font-bold leading-[1.1] sm:text-3xl md:text-5xl">How It Works</h2>
@@ -128,7 +128,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section id="examples" className="container space-y-6 py-8 md:py-12 lg:py-24">
+        <section id="examples" className="container space-y-6 py-8 md:py-12 lg:py-24 mx-auto">
           <div className="mx-auto flex max-w-[58rem] flex-col items-center space-y-4 text-center">
             <h2 className="text-3xl font-bold leading-[1.1] sm:text-3xl md:text-5xl">Example Bet</h2>
             <p className="max-w-[85%] text-muted-foreground sm:text-lg">
@@ -188,7 +188,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section id="faq" className="container space-y-6 bg-slate-50 py-8 dark:bg-transparent md:py-12 lg:py-24">
+        <section id="faq" className="container space-y-6 bg-slate-50 py-8 dark:bg-transparent md:py-12 lg:py-24 mx-auto">
           <div className="mx-auto flex max-w-[58rem] flex-col items-center space-y-4 text-center">
             <h2 className="text-3xl font-bold leading-[1.1] sm:text-3xl md:text-5xl">Frequently Asked Questions</h2>
           </div>
@@ -224,7 +224,7 @@ export default function LandingPage() {
         </section>
       </main>
       <footer className="border-t py-6 md:py-0">
-        <div className="container flex flex-col items-center justify-between gap-4 md:h-24 md:flex-row">
+        <div className="container flex flex-col items-center justify-between gap-4 md:h-24 md:flex-row mx-auto">
           <div className="flex flex-col items-center gap-4 px-8 md:flex-row md:gap-2 md:px-0">
             <Shield className="h-6 w-6" />
             <p className="text-center text-sm leading-loose text-muted-foreground md:text-left">
