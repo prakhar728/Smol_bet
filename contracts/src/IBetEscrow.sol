@@ -85,4 +85,10 @@ interface IBetEscrow {
      * @return Total number of bets
      */
     function getTotalBets() external view returns (uint256);
+    
+    /**
+     * @dev Returns the current balance of the contract
+     * @return The contract's balance in wei
+     */
+    function getContractBalance() external view returns (uint256);
 }

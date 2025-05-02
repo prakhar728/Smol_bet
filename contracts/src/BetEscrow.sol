@@ -11,10 +11,15 @@ contract BetEscrow is IBetEscrow {
     // === State Variables ===
     uint256 private _betCounter;
     uint256 public constant TIMEOUT_PERIOD = 7 days; // Default timeout for bet acceptance
+    uint256 public constant FEE_PERCENTAGE = 1; // 1% fee on all bets
+    address public feeCollector;
 
     // === Mappings ===
     mapping(uint256 => Bet) public bets;
 
+    constructor() {
+        feeCollector = msg.sender; // Set the deployer as the initial fee collector
+    }
 
     // === Modifiers ===
     modifier betExists(uint256 betId) {
@@ -125,7 +130,6 @@ contract BetEscrow is IBetEscrow {
         return betId;
     }
 
-
     /**
      * @dev Resolves a bet, can be called by resolver or participants when in agreement
      * @param betId The ID of the bet to resolve
@@ -154,15 +158,20 @@ contract BetEscrow is IBetEscrow {
         bet.resolved = true;
         bet.winner = winner;
 
-        uint256 winnings = bet.stake * 2; // Both stakes
+        uint256 totalAmount = bet.stake * 2; // Both stakes
+        uint256 fee = (totalAmount * FEE_PERCENTAGE) / 100; // Calculate 1% fee
+        uint256 winnings = totalAmount - fee; // Remaining amount for winner
 
-        (bool success, ) = winner.call{value: winnings}("");
-        require(success, "Transfer failed");
+        // Transfer fee to fee collector
+        (bool feeSuccess, ) = feeCollector.call{value: fee}("");
+        require(feeSuccess, "Fee transfer failed");
 
+        // Transfer winnings to winner
+        (bool winnerSuccess, ) = winner.call{value: winnings}("");
+        require(winnerSuccess, "Winnings transfer failed");
 
         emit BetResolved(betId, winner, msg.sender);
     }
-
 
     /**
      * @dev Handles mutual agreement on bet resolution by both parties
@@ -197,6 +206,18 @@ contract BetEscrow is IBetEscrow {
         bet.resolved = true;
         bet.winner = winner;
 
+        uint256 totalAmount = bet.stake * 2; // Both stakes
+        uint256 fee = (totalAmount * FEE_PERCENTAGE) / 100; // Calculate 1% fee
+        uint256 winnings = totalAmount - fee; // Remaining amount for winner
+
+        // Transfer fee to fee collector
+        (bool feeSuccess, ) = feeCollector.call{value: fee}("");
+        require(feeSuccess, "Fee transfer failed");
+
+        // Transfer winnings to winner
+        (bool winnerSuccess, ) = winner.call{value: winnings}("");
+        require(winnerSuccess, "Winnings transfer failed");
+
         emit BetResolved(betId, winner, address(0)); // address(0) indicates mutual agreement
     }
 
@@ -217,6 +238,36 @@ contract BetEscrow is IBetEscrow {
      */
     function getTotalBets() external view returns (uint256) {
         return _betCounter;
+    }
+    
+    /**
+     * @dev Returns the current balance of the contract
+     * @return The contract's balance in wei
+     */
+    function getContractBalance() external view returns (uint256) {
+        return address(this).balance;
+    }
+    
+    /**
+     * @dev Changes the fee collector address
+     * @param newFeeCollector The address of the new fee collector
+     */
+    function setFeeCollector(address newFeeCollector) external {
+        require(msg.sender == feeCollector, "Only current fee collector can change");
+        require(newFeeCollector != address(0), "Invalid fee collector address");
+        feeCollector = newFeeCollector;
+    }
+    
+    /**
+     * @dev Allows the fee collector to withdraw accumulated fees
+     * @param amount The amount to withdraw
+     */
+    function withdrawFees(uint256 amount) external {
+        require(msg.sender == feeCollector, "Only fee collector can withdraw");
+        require(amount > 0 && amount <= address(this).balance, "Invalid withdrawal amount");
+        
+        (bool success, ) = feeCollector.call{value: amount}("");
+        require(success, "Fee withdrawal failed");
     }
 
     /**

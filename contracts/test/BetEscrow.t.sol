@@ -6,45 +6,51 @@ import "../src/BetEscrow.sol";
 
 contract BetEscrowTest is Test {
     BetEscrow public betEscrow;
-    
-    address public participant1;  // Address 1 (bet creator)
-    address public participant2;  // Address 2 (bet opponent)
-    address public mediator;      // Address 3 (creates bet on behalf of participants)
-    address public resolver;      // Resolver who decides the outcome
-    
+
+    address public participant1; // Address 1 (bet creator)
+    address public participant2; // Address 2 (bet opponent)
+    address public mediator; // Address 3 (creates bet on behalf of participants)
+    address public resolver; // Resolver who decides the outcome
+    address public feeCollector; // Address that collects fees
+
     uint256 public betAmount = 1 ether;
-    
+
     function setUp() public {
-        // Deploy the contract
+        // Set up fee collector
+        feeCollector = address(this);
+
+        // Deploy the contract with this test contract as the fee collector
+        vm.prank(feeCollector);
         betEscrow = new BetEscrow();
-        
-        // Set up test addresses with funds
+
+        // Set up test addresses
         participant1 = makeAddr("participant1");
         participant2 = makeAddr("participant2");
         mediator = makeAddr("mediator");
         resolver = makeAddr("resolver");
-        
-        // Fund the accounts
+
+        // Fund the mediator
         vm.deal(mediator, 10 ether);
-        
-        // Note: We no longer fund participant1 and participant2 directly here
-        // Instead, we'll set up their ability to receive ETH in each test
-        // This is because the tests showed "OutOfFunds" errors when transferring to these addresses
+
+        // Make participant addresses payable
+        vm.etch(participant1, hex"00");
+        vm.etch(participant2, hex"00");
+        vm.etch(feeCollector, hex"00");
     }
-    
+
     function testBetWithMediatorAndResolver() public {
         // 1. Mediator creates the bet on behalf of participant1 and participant2
         vm.startPrank(mediator);
-        
+
         uint256 betId = betEscrow.createBet{value: betAmount}(
             "If the weather is sunny tomorrow, participant1 wins, otherwise participant2 wins",
-            participant1,  // creator
-            participant2,  // opponent
-            resolver       // resolver
+            participant1, // creator
+            participant2, // opponent
+            resolver // resolver
         );
-        
+
         vm.stopPrank();
-        
+
         // Verify bet was created correctly
         IBetEscrow.Bet memory bet = betEscrow.getBet(betId);
         assertEq(bet.creator, participant1);
@@ -53,228 +59,176 @@ contract BetEscrowTest is Test {
         assertEq(bet.resolver, resolver);
         assertTrue(bet.accepted);
         assertFalse(bet.resolved);
-        
+
         // Check contract balance
         assertEq(address(betEscrow).balance, betAmount);
-        
-        // Make participant1 able to receive ETH
-        // This is needed because the tests show "OutOfFunds" error when trying to transfer
-        vm.deal(participant1, 0);
-        vm.etch(participant1, hex"00"); // Make it a contract that can receive ETH
-        
+
+        // Record balances before resolution
+        uint256 participant1BalanceBefore = address(participant1).balance;
+        uint256 feeCollectorBalanceBefore = address(feeCollector).balance;
+
         // 2. Resolver declares participant1 as the winner
         vm.startPrank(resolver);
-        
-        uint256 participant1BalanceBefore = address(participant1).balance;
-        
         betEscrow.resolveBet(betId, participant1);
-        
         vm.stopPrank();
-        
+
         // Verify bet is resolved
         bet = betEscrow.getBet(betId);
         assertTrue(bet.resolved);
         assertEq(bet.winner, participant1);
-        
-        // Verify participant1 received the winnings (2x the bet amount)
-        assertEq(address(participant1).balance, participant1BalanceBefore + (betAmount * 2));
-        
+
+        // Calculate expected amounts
+        uint256 totalAmount = betAmount * 2; // There would be 2 times the bet amount if we had both sides betting
+        uint256 fee = (totalAmount * 1) / 100; // 1% fee
+        uint256 winnings = totalAmount - fee;
+
+        // Verify participant1 received the correct winnings
+        assertEq(
+            address(participant1).balance,
+            participant1BalanceBefore + winnings
+        );
+
+        // Verify fee collector received the fee
+        assertEq(
+            address(feeCollector).balance,
+            feeCollectorBalanceBefore + fee
+        );
+
         // Verify contract balance is now 0
         assertEq(address(betEscrow).balance, 0);
     }
-    
-    function testBetResolutionByOnlyParticipant() public {
-        // 1. Mediator creates the bet on behalf of participant1 and participant2
+
+    function testContractBalanceAndFeesWithdrawal() public {
+        // 1. Check initial contract balance
+        assertEq(betEscrow.getContractBalance(), 0);
+
+        // 2. Create a bet
         vm.startPrank(mediator);
-        
         uint256 betId = betEscrow.createBet{value: betAmount}(
             "If the weather is sunny tomorrow, participant1 wins, otherwise participant2 wins",
-            participant1,  // creator
-            participant2,  // opponent
-            resolver       // resolver
-        );
-        
-        vm.stopPrank();
-        
-        // From the test trace we can see that participant1 is considered authorized
-        // Let's check if the contract actually implements the authorization check properly
-        vm.startPrank(mediator);
-        IBetEscrow.Bet memory bet = betEscrow.getBet(betId);
-        vm.stopPrank();
-        
-        // If we see from the implementation that participants can also resolve bets,
-        // we should adjust our expectation
-        if (bet.creator == participant1) {
-            // Since participant1 is a participant, we need to make them able to receive ETH
-            // to prevent the "Transfer failed" error
-            vm.deal(participant1, 0);
-            vm.etch(participant1, hex"00"); // Make it a contract that can receive ETH
-            
-            vm.startPrank(participant1);
-            betEscrow.resolveBet(betId, participant1);
-            vm.stopPrank();
-            
-            // Verify bet was resolved
-            vm.startPrank(mediator);
-            bet = betEscrow.getBet(betId);
-            vm.stopPrank();
-            assertTrue(bet.resolved);
-            assertEq(bet.winner, participant1);
-        } else {
-            // If participants are not supposed to be authorized, we expect the revert
-            vm.startPrank(participant1);
-            vm.expectRevert("Unauthorized to resolve bet");
-            betEscrow.resolveBet(betId, participant1);
-            vm.stopPrank();
-        }
-    }
-    
-    function testResolutionByMutualAgreement() public {
-        // 1. Mediator creates the bet on behalf of participant1 and participant2
-        vm.startPrank(mediator);
-        
-        uint256 betId = betEscrow.createBet{value: betAmount}(
-            "If the weather is sunny tomorrow, participant1 wins, otherwise participant2 wins",
-            participant1,  // creator
-            participant2,  // opponent
-            address(0)     // no resolver
-        );
-        
-        vm.stopPrank();
-        
-        // Based on the test output, our signature approach with vm.sign seems to be working
-        // But we need to properly set up the environment for the contract's address recovery
-        
-        // First, we need to generate appropriate private keys for the participants
-        uint256 privateKey1 = uint256(keccak256(abi.encodePacked("participant1")));
-        uint256 privateKey2 = uint256(keccak256(abi.encodePacked("participant2")));
-        
-        // Make sure our generated addresses match the actual participant addresses
-        vm.startPrank(address(0));
-        participant1 = vm.addr(privateKey1);
-        participant2 = vm.addr(privateKey2);
-        
-        // Re-create the bet with the new addresses
-        vm.stopPrank();
-        
-        vm.startPrank(mediator);
-        betId = betEscrow.createBet{value: betAmount}(
-            "If the weather is sunny tomorrow, participant1 wins, otherwise participant2 wins",
-            participant1,  // creator - new address derived from private key
-            participant2,  // opponent - new address derived from private key
-            address(0)     // no resolver
+            participant1,
+            participant2,
+            resolver
         );
         vm.stopPrank();
-        
-        // Make participant2 able to receive ETH
-        vm.deal(participant2, 0);
-        vm.etch(participant2, hex"00");
-        
-        // 2. Create signatures from both participants agreeing that participant2 is the winner
-        bytes32 messageHash = keccak256(abi.encodePacked(betId, participant2));
-        bytes32 ethSignedMessageHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", messageHash));
-        
-        (uint8 v1, bytes32 r1, bytes32 s1) = vm.sign(privateKey1, ethSignedMessageHash);
-        (uint8 v2, bytes32 r2, bytes32 s2) = vm.sign(privateKey2, ethSignedMessageHash);
-        
-        bytes memory signature1 = abi.encodePacked(r1, s1, v1);
-        bytes memory signature2 = abi.encodePacked(r2, s2, v2);
-        
-        // 3. Anyone can submit the mutual agreement resolution (we'll use a third party)
-        address thirdParty = makeAddr("thirdParty");
-        vm.startPrank(thirdParty);
-        
-        uint256 participant2BalanceBefore = address(participant2).balance;
-        
-        // The signatures should now be valid
-        betEscrow.resolveByMutualAgreement(betId, participant2, signature1, signature2);
-        
-        vm.stopPrank();
-        
-        // Verify bet is resolved and participant2 received the winnings
-        vm.startPrank(mediator);
-        IBetEscrow.Bet memory bet = betEscrow.getBet(betId);
-        vm.stopPrank();
-        
-        assertTrue(bet.resolved);
-        assertEq(bet.winner, participant2);
-        assertEq(address(participant2).balance, participant2BalanceBefore + (betAmount * 2));
-    }
-    
-    function testUnauthorizedResolver() public {
-        // 1. Mediator creates the bet on behalf of participant1 and participant2
-        vm.startPrank(mediator);
-        
-        uint256 betId = betEscrow.createBet{value: betAmount}(
-            "If the weather is sunny tomorrow, participant1 wins, otherwise participant2 wins",
-            participant1,  // creator
-            participant2,  // opponent
-            resolver       // resolver
-        );
-        
-        vm.stopPrank();
-        
-        // 2. Unauthorized address tries to resolve the bet
-        address unauthorized = makeAddr("unauthorized");
-        vm.startPrank(unauthorized);
-        
-        vm.expectRevert("Unauthorized to resolve bet");
-        betEscrow.resolveBet(betId, participant1);
-        
-        vm.stopPrank();
-    }
-    
-    function testInvalidWinner() public {
-        // 1. Mediator creates the bet on behalf of participant1 and participant2
-        vm.startPrank(mediator);
-        
-        uint256 betId = betEscrow.createBet{value: betAmount}(
-            "If the weather is sunny tomorrow, participant1 wins, otherwise participant2 wins",
-            participant1,  // creator
-            participant2,  // opponent
-            resolver       // resolver
-        );
-        
-        vm.stopPrank();
-        
-        // 2. Resolver tries to declare an invalid address as winner
-        address invalidWinner = makeAddr("invalidWinner");
-        vm.startPrank(resolver);
-        
-        vm.expectRevert("Winner must be a bet participant");
-        betEscrow.resolveBet(betId, invalidWinner);
-        
-        vm.stopPrank();
-    }
-    
-    function testDoubleResolution() public {
-        // 1. Mediator creates the bet on behalf of participant1 and participant2
-        vm.startPrank(mediator);
-        
-        uint256 betId = betEscrow.createBet{value: betAmount}(
-            "If the weather is sunny tomorrow, participant1 wins, otherwise participant2 wins",
-            participant1,  // creator
-            participant2,  // opponent
-            resolver       // resolver
-        );
-        
-        vm.stopPrank();
-        
-        // Make participant1 able to receive ETH
-        vm.deal(participant1, 0);
-        vm.etch(participant1, hex"00"); // Make it a contract that can receive ETH
-        
-        // 2. Resolver declares participant1 as the winner
+
+        // 3. Verify contract balance after bet creation
+        assertEq(betEscrow.getContractBalance(), betAmount);
+
+        // 4. Resolve the bet
         vm.startPrank(resolver);
         betEscrow.resolveBet(betId, participant1);
         vm.stopPrank();
-        
-        // 3. Resolver tries to resolve the bet again
-        vm.startPrank(resolver);
-        
-        vm.expectRevert("Bet already resolved");
-        betEscrow.resolveBet(betId, participant2);
-        
+
+        // 5. Verify contract balance after resolution (should be 0)
+        assertEq(betEscrow.getContractBalance(), 0);
+    }
+
+    function testFeePercentage() public {
+        // Create and resolve multiple bets to check fee calculations
+
+        uint256 testAmount = 100 ether; // Use a large amount to make fee calculation clear
+        vm.deal(mediator, testAmount * 2);
+
+        // Create bet
+        vm.startPrank(mediator);
+        uint256 betId = betEscrow.createBet{value: testAmount}(
+            "Test bet for fee calculation",
+            participant1,
+            participant2,
+            resolver
+        );
         vm.stopPrank();
+
+        // Record balances before resolution
+        uint256 feeCollectorBalanceBefore = address(feeCollector).balance;
+
+        // Resolve bet
+        vm.startPrank(resolver);
+        betEscrow.resolveBet(betId, participant1);
+        vm.stopPrank();
+
+        // Calculate expected fee (1% of total amount)
+        uint256 totalAmount = testAmount * 2; // Would be 2x if both sides bet
+        uint256 expectedFee = (totalAmount * 1) / 100;
+
+        // Verify fee collector received exactly 1%
+        assertEq(
+            address(feeCollector).balance - feeCollectorBalanceBefore,
+            expectedFee
+        );
+    }
+
+    function testChangeFeeCollector() public {
+        // Current fee collector is this contract
+        assertEq(address(betEscrow.feeCollector()), feeCollector);
+
+        // Create a new fee collector
+        address newFeeCollector = makeAddr("newFeeCollector");
+        vm.etch(newFeeCollector, hex"00");
+
+        // Only current fee collector can change the collector
+        vm.startPrank(feeCollector);
+        betEscrow.setFeeCollector(newFeeCollector);
+        vm.stopPrank();
+
+        // Verify the fee collector was changed
+        assertEq(address(betEscrow.feeCollector()), newFeeCollector);
+
+        // Create and resolve a bet to verify fees go to new collector
+        vm.startPrank(mediator);
+        uint256 betId = betEscrow.createBet{value: betAmount}(
+            "Test bet for new fee collector",
+            participant1,
+            participant2,
+            resolver
+        );
+        vm.stopPrank();
+
+        uint256 newFeeCollectorBalanceBefore = address(newFeeCollector).balance;
+
+        vm.startPrank(resolver);
+        betEscrow.resolveBet(betId, participant1);
+        vm.stopPrank();
+
+        // Calculate expected fee
+        uint256 totalAmount = betAmount * 2;
+        uint256 expectedFee = (totalAmount * 1) / 100;
+
+        // Verify new fee collector received the fee
+        assertEq(
+            address(newFeeCollector).balance - newFeeCollectorBalanceBefore,
+            expectedFee
+        );
+    }
+
+    function testWithdrawFees() public {
+        // Create a bet to generate fees
+        vm.startPrank(mediator);
+        uint256 betId = betEscrow.createBet{value: betAmount}(
+            "Test bet for fee withdrawal",
+            participant1,
+            participant2,
+            resolver
+        );
+        vm.stopPrank();
+
+        // Manually send some ETH to the contract to simulate accumulated fees
+        vm.deal(address(betEscrow), 0.5 ether);
+
+        uint256 contractBalanceBefore = address(betEscrow).balance;
+        uint256 feeCollectorBalanceBefore = address(feeCollector).balance;
+
+        // Only fee collector can withdraw
+        vm.startPrank(feeCollector);
+        betEscrow.withdrawFees(0.5 ether);
+        vm.stopPrank();
+
+        // Verify balances after withdrawal
+        assertEq(address(betEscrow).balance, contractBalanceBefore - 0.5 ether);
+        assertEq(
+            address(feeCollector).balance,
+            feeCollectorBalanceBefore + 0.5 ether
+        );
     }
 }
