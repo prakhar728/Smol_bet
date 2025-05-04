@@ -8,6 +8,8 @@ import {
 } from "../../utils/twitter-client";
 import { parsePostToBet } from "./lib/intent-parser";
 
+
+const RESOLVER="0x325E5Bd3d7d12cA076D0A8f9f5Be7d1De1dd4c83";
 // Configuration constants
 const REPLY_PROCESSING_DELAY = 15000;
 const DEPOSIT_PROCESSING_DELAY = 5000;
@@ -130,7 +132,7 @@ const createBetInContract = async (bet) => {
       bet.description,
       bet.creatorAddress,
       bet.opponentAddress,
-      "0x0000000000000000000000000000000000000000" // No third-party resolver for now
+      RESOLVER // No third-party resolver for now
     );
 
     console.log("Bet created with ID:", betTx.betId);
@@ -257,6 +259,18 @@ const processSettlements = async () => {
   // This would need more sophisticated logic to accurately determine outcome
   // For now, we'll look for specific settlement phrases
 
+  // TEMPORARY IMPLEMENTATION: Always make the creator the winner
+  // This will be replaced with proper settlement logic later
+  const winnerAddress = bet.creatorAddress;
+  const winnerUsername = bet.creatorUsername;
+  const settlementReason = "Temporary automatic settlement (creator always wins)";
+
+  /*
+  // Original implementation commented out
+  // Parse tweet text to determine winner
+  // This would need more sophisticated logic to accurately determine outcome
+  // For now, we'll look for specific settlement phrases
+
   let winnerAddress = null;
   let winnerUsername = null;
   let settlementReason = "";
@@ -287,6 +301,7 @@ const processSettlements = async () => {
       }
     }
   }
+  */
 
   if (winnerAddress) {
     // Resolve bet in the contract
@@ -706,7 +721,7 @@ const startProcessingQueues = () => {
   processAddressConfirmation();
   processDeposits();
   processSettlements();
-  processRefunds();
+//   processRefunds();  // NO REFUNDS FOR TESTNET
 };
 
 /**
