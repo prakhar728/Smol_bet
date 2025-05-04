@@ -6,6 +6,7 @@ import {
     getConversationId,
     getLatestConversationTweet,
 } from '../../utils/twitter-client';
+import { parsePostToBet } from './lib/intent-parser';
 
 // Configuration constants
 const REPLY_PROCESSING_DELAY = 15000;
@@ -632,11 +633,10 @@ const processReplies = async () => {
     
     try {
         // Parse bet from tweet text
-        // This regex would need to be refined for production
-        const betRegex = /@(\w+)\s+I\s+bet\s+you\s+([\d.]+)\s+ETH\s+that\s+(.+)/i;
-        const matches = tweet.text.match(betRegex);
+        const betInfo = parsePostToBet(tweet.text);
+
         
-        if (!matches || matches.length < 4) {
+        if (!betInfo || betInfo.contains("INVALID")) {
             console.log('Could not parse bet from tweet');
             await replyToTweet(
                 `Sorry, I couldn't understand the bet format. Please use the format: "@username I bet you X ETH that [condition]"`,
@@ -646,9 +646,9 @@ const processReplies = async () => {
             return;
         }
         
-        const opponentUsername = matches[1];
-        const stakeAmount = matches[2];
-        const description = matches[3];
+        const opponentUsername = betInfo.opponent.substring(1);
+        const stakeAmount = betInfo.amount.split(" ")[0]; 
+        const description = betInfo.bet_terms;
         
         // Convert stake to wei
         const stake = BigInt(Math.floor(parseFloat(stakeAmount) * 1e18));
