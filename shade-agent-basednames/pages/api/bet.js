@@ -185,51 +185,56 @@ const processRefunds = async () => {
   }
   console.log("Processing refund for bet:", bet.id);
 
-  // Handle refunds for creator and opponent if needed
-  for (const role of ["creator", "opponent"]) {
-    const address = bet[`${role}DepositAddress`];
-    if (!address) continue;
+  // Handle refund if there's a deposit
+  const address = bet.depositAddress;
+  if (!address) {
+    // No deposit address, nothing to refund
+    await sleepThen(REFUND_PROCESSING_DELAY, processRefunds);
+    return;
+  }
 
-    let tx = await getTransactionsForAddress(address);
-    let internal = false;
+  let tx = await getTransactionsForAddress(address);
+  let internal = false;
 
-    // Check internal transactions if no regular transactions found
-    if (!tx) {
-      tx = await getTransactionsForAddress(address, "txlistinternal");
-      internal = true;
-    }
+  // Check internal transactions if no regular transactions found
+  if (!tx) {
+    tx = await getTransactionsForAddress(address, "txlistinternal");
+    internal = true;
+  }
 
-    if (tx) {
-      try {
-        const balance = await evm.getBalance({
-          address: address,
+  if (tx) {
+    try {
+      const balance = await evm.getBalance({
+        address: address,
+      });
+
+      if (balance > 0n) {
+        const feeData = await evm.getGasPrice();
+        const gasPrice =
+          BigInt(feeData.maxFeePerGas) + BigInt(feeData.maxPriorityFeePerGas);
+        const gasLimit = internal ? 500000n : 21000n;
+        const gasFee = gasPrice * gasLimit;
+
+        // Ensure we don't overdraw
+        const adjust = 5000000000000n;
+        const amount = evm.formatBalance(balance - gasFee - adjust);
+
+        // Send refund back to original sender
+        await evm.send({
+          path: bet.betPath,
+          from: address,
+          to: tx.from,
+          amount,
+          gasLimit,
         });
 
-        if (balance > 0n) {
-          const feeData = await evm.getGasPrice();
-          const gasPrice =
-            BigInt(feeData.maxFeePerGas) + BigInt(feeData.maxPriorityFeePerGas);
-          const gasLimit = internal ? 500000n : 21000n;
-          const gasFee = gasPrice * gasLimit;
+        console.log(`Refunded ${amount} to ${tx.from}`);
 
-          // Ensure we don't overdraw
-          const adjust = 5000000000000n;
-          const amount = evm.formatBalance(balance - gasFee - adjust);
-
-          // Send refund back to original sender
-          await evm.send({
-            path: bet[`${role}Path`],
-            from: address,
-            to: tx.from,
-            amount,
-            gasLimit,
-          });
-
-          console.log(`Refunded ${amount} to ${role} at ${tx.from}`);
-        }
-      } catch (e) {
-        console.log(`Error processing refund for ${role}:`, e);
+        // If there are multiple transactions, we might need a more sophisticated refund logic
+        // This simple version assumes a single depositor or refunds everything to the first depositor
       }
+    } catch (e) {
+      console.log(`Error processing refund:`, e);
     }
   }
 
@@ -362,13 +367,10 @@ const processDeposits = async () => {
   }
 
   console.log("Processing deposits for bet:", bet.id);
-  console.log("Creator deposit attempts:", bet.creatorDepositAttempt);
-  console.log("Opponent deposit attempts:", bet.opponentDepositAttempt);
+  console.log("Deposit attempts:", bet.depositAttempt);
 
   // Check if deposits are timed out
-  const timedOut =
-    bet.creatorDepositAttempt >= MAX_DEPOSIT_ATTEMPTS ||
-    bet.opponentDepositAttempt >= MAX_DEPOSIT_ATTEMPTS;
+  const timedOut = bet.depositAttempt >= MAX_DEPOSIT_ATTEMPTS;
 
   if (timedOut) {
     console.log("Deposit timed out for bet:", bet.id);
@@ -377,51 +379,32 @@ const processDeposits = async () => {
     return;
   }
 
-  // Check deposits from both participants
-  let creatorDeposited = bet.creatorDeposited || false;
-  let opponentDeposited = bet.opponentDeposited || false;
+  // Check for total deposit amount
+  let totalDeposited = bet.totalDeposited || false;
 
-  // Check creator deposit if not already confirmed
-  if (!creatorDeposited) {
+  if (!totalDeposited) {
     try {
-      const creatorBalance = await evm.getBalance({
-        address: bet.creatorDepositAddress,
+      const balance = await evm.getBalance({
+        address: bet.depositAddress,
       });
-      console.log("Creator balance:", evm.formatBalance(creatorBalance));
+      console.log("Deposit balance:", evm.formatBalance(balance));
 
-      if (creatorBalance >= bet.stake) {
-        creatorDeposited = true;
-        bet.creatorDeposited = true;
-        console.log("Creator deposit confirmed");
+      // Check if the full amount (both stakes) has been deposited
+      if (balance >= bet.stake * 2n) {
+        totalDeposited = true;
+        bet.totalDeposited = true;
+        console.log("Total deposit confirmed");
       }
     } catch (e) {
-      console.log("Error checking creator balance:", e);
+      console.log("Error checking balance:", e);
     }
   }
 
-  // Check opponent deposit if not already confirmed
-  if (!opponentDeposited) {
-    try {
-      const opponentBalance = await evm.getBalance({
-        address: bet.opponentDepositAddress,
-      });
-      console.log("Opponent balance:", evm.formatBalance(opponentBalance));
+  // If the full amount has been deposited, create the bet in contract
+  if (totalDeposited) {
+    console.log("Full amount deposited, creating bet in contract");
 
-      if (opponentBalance >= bet.stake) {
-        opponentDeposited = true;
-        bet.opponentDeposited = true;
-        console.log("Opponent deposit confirmed");
-      }
-    } catch (e) {
-      console.log("Error checking opponent balance:", e);
-    }
-  }
-
-  // If both have deposited, create the bet in contract
-  if (creatorDeposited && opponentDeposited) {
-    console.log("Both parties deposited, creating bet in contract");
-
-    const betResult = await createBetInContract(bet);
+    const betResult = await createBetInContract(bet); // take a look at this
 
     if (betResult.success) {
       bet.betId = betResult.betId;
@@ -444,11 +427,11 @@ const processDeposits = async () => {
       await replyToTweet(
         `Bet created! 🎲\n\nBet between @${bet.creatorUsername} and @${
           bet.opponentUsername
-        } is now active!\n\nStake: ${evm.formatBalance(
-          bet.stake
-        )} ETH each\n\nDescription: "${
+        } is now active!\n\nTotal stake: ${evm.formatBalance(
+          bet.stake * 2n
+        )} ETH\n\nDescription: "${
           bet.description
-        }"\n\nEither party can trigger settlement by tagging @bankrbot`,
+        }"\n\nEither party can trigger settlement by tagging @funnyorfud with "settle bet"`,
         replyId
       );
 
@@ -460,13 +443,8 @@ const processDeposits = async () => {
       pendingRefund.push(bet);
     }
   } else {
-    // Increment attempt counters for deposits not yet received
-    if (!creatorDeposited) {
-      bet.creatorDepositAttempt++;
-    }
-    if (!opponentDeposited) {
-      bet.opponentDepositAttempt++;
-    }
+    // Increment attempt counter
+    bet.depositAttempt++;
 
     // Put back in queue to check again
     pendingDeposits.push(bet);
@@ -487,40 +465,27 @@ const processAddressConfirmation = async () => {
 
   console.log("Processing address confirmation for bet:", bet.id);
 
-  // Generate unique deposit addresses for both parties
+  // Generate a single unique deposit address for the bet
   try {
-    // Generate address for creator
-    const creatorPath = `${bet.creatorUsername}-${bet.id}`;
-    const { address: creatorAddress } = await generateAddress({
+    // Generate address using combined path of both usernames
+    const betPath = `${bet.creatorUsername}-${bet.opponentUsername}-${bet.id}`;
+    const { address: depositAddress } = await generateAddress({
       publicKey:
         networkId === "testnet"
           ? process.env.MPC_PUBLIC_KEY_TESTNET
           : process.env.MPC_PUBLIC_KEY_MAINNET,
       accountId: process.env.NEXT_PUBLIC_contractId,
-      path: creatorPath,
+      path: betPath,
       chain: "evm",
     });
 
-    // Generate address for opponent
-    const opponentPath = `${bet.opponentUsername}-${bet.id}`;
-    const { address: opponentAddress } = await generateAddress({
-      publicKey:
-        networkId === "testnet"
-          ? process.env.MPC_PUBLIC_KEY_TESTNET
-          : process.env.MPC_PUBLIC_KEY_MAINNET,
-      accountId: process.env.NEXT_PUBLIC_contractId,
-      path: opponentPath,
-      chain: "evm",
-    });
-
-    // Store addresses and paths
-    bet.creatorPath = creatorPath;
-    bet.opponentPath = opponentPath;
-    bet.creatorDepositAddress = creatorAddress;
-    bet.opponentDepositAddress = opponentAddress;
+    // Store address and path
+    bet.betPath = betPath;
+    bet.depositAddress = depositAddress;
 
     // Format stake amount
     const formattedStake = evm.formatBalance(bet.stake);
+    const totalStake = evm.formatBalance(bet.stake * 2n);
 
     // Get conversation ID and latest tweet to reply to
     const conversationId = await getConversationId(client, bet.id);
@@ -538,16 +503,14 @@ const processAddressConfirmation = async () => {
 
     // Reply with deposit instructions
     const response = await replyToTweet(
-      `Bet confirmed! 🎲\n\n@${bet.creatorUsername} Please send ${formattedStake} ETH to: ${creatorAddress}\n\n@${bet.opponentUsername} Please send ${formattedStake} ETH to: ${opponentAddress}\n\nBoth parties must deposit within 10 minutes. When both deposits are received, the bet will be activated!`,
+      `Bet confirmed! 🎲\n\n@${bet.creatorUsername} and @${bet.opponentUsername}, please send a total of ${totalStake} ETH (${formattedStake} ETH each) to: ${depositAddress}\n\nDeposits must be completed within 10 minutes. The bet will be activated once the full amount is received!`,
       replyId
     );
 
     if (response?.data) {
       // Initialize deposit monitoring
-      bet.creatorDepositAttempt = 0;
-      bet.opponentDepositAttempt = 0;
-      bet.creatorDeposited = false;
-      bet.opponentDeposited = false;
+      bet.depositAttempt = 0;
+      bet.totalDeposited = false;
 
       // Move to deposit monitoring
       pendingDeposits.push(bet);
@@ -561,7 +524,7 @@ const processAddressConfirmation = async () => {
       }
     }
   } catch (e) {
-    console.log("Error generating addresses:", e);
+    console.log("Error generating address:", e);
     bet.confirmationAttempt = (bet.confirmationAttempt || 0) + 1;
 
     if (bet.confirmationAttempt < 3) {
