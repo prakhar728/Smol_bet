@@ -1,42 +1,19 @@
-import { ethers } from "ethers";
-import { networkId, contractCall } from "@neardefi/shade-agent-js";
+import { ethers, Log } from "ethers";
+import {
+  networkId,
+  contractCall,
+  parseNearAmount,
+} from "@neardefi/shade-agent-js";
+import BET_ESCROW_CONTRACT from "../public/BetEscrow.json";
 
-// Base Sepolia contract addresses from README
-const REGISTRAR_CONTROLLER_ADDRESS = {
-  testnet: "0x49ae3cc2e3aa768b1e5654f5d3c6002144a59581",
-  mainnet: "0x4cCb0BB02FCABA27e82a56646E81d8c5bC4119a5",
-}; // RegistrarController on Base Sepolia
-const L2_RESOLVER_ADDRESS = {
-  testnet: "0x6533C94869D28fAA8dF77cc63f9e2b2D6Cf77eBA",
-  mainnet: "0xC6d566A56A1aFf6508b41f6c90ff131615583BCD",
-}; // L2Resolver on Base Sepolia
+// BetEscrow contract address
+const BET_ESCROW_ADDRESS = {
+  testnet: "0xFd5152d481CB46Ea91AA317782e5963eDc45a609", // Replace with your testnet contract address
+  mainnet: "0x456DEF...", // Replace with your mainnet contract address
+};
 
-// ABIs for Base Name Service contracts
-const REGISTRAR_CONTROLLER_ABI = [
-  "function valid(string memory name) public pure returns (bool)",
-  "function available(string memory name) public view returns (bool)",
-  "function register(RegisterRequest calldata request) public payable validRegistration(request)",
-  "function rentPrice(string calldata name, uint256 duration) public view returns (IPriceOracle.Price memory price)",
-  "function registerPrice(string memory name, uint256 duration) public view returns (uint256)",
-];
-
-// Define the RegisterRequest struct
-const REGISTER_REQUEST_TYPE = `
-tuple(
-    string name,
-    address owner,
-    uint256 duration,
-    address resolver,
-    bytes[] data,
-    bool reverseRecord
-)
-`;
-
-const L2_RESOLVER_ABI = [
-  "function setAddr(bytes32 node, address addr) external",
-  "function setText(bytes32 node, string calldata key, string calldata value) external",
-  "function setName(bytes32 node, string calldata name) external",
-];
+// ABI for BetEscrow contract
+const BET_ESCROW_ABI = BET_ESCROW_CONTRACT.abi;
 
 const getProvider = () => {
   return new ethers.JsonRpcProvider(
@@ -57,185 +34,153 @@ export const evm = {
       ? "https://sepolia.basescan.org"
       : "https://basescan.org",
 
-  // custom methods for basednames registration
+  // Get the BetEscrow contract instance
+  getBankrContract: async () => {
+    const provider = getProvider();
+    return new ethers.Contract(
+      BET_ESCROW_ADDRESS[networkId],
+      BET_ESCROW_ABI,
+      provider
+    );
+  },
 
-  checkBasename: async (basename) => {
+  getProvider: getProvider,
+
+  // Get the deployer account (fee collector)
+  getBankrDeployer: async () => {
+    // This should return the account that can collect fees or otherwise
+    // manage the BetEscrow contract. Could be modified based on your needs.
+    return { address: BET_ESCROW_ADDRESS[networkId] };
+  },
+
+  // Create a bet in the BetEscrow contract
+  createBetTx: async ({
+    description,
+    creator,
+    opponent,
+    resolver,
+    stake,
+    path,
+  }) => {
     try {
+      // Create contract interface
+      const betEscrowInterface = new ethers.Interface(BET_ESCROW_ABI);
+
+      // Get provider and prepare transaction
       const provider = getProvider();
 
-      console.log(`Checking basename: "${basename}"...`);
+      // Get the network's current values
+      const [nonce, feeData] = await Promise.all([
+        provider.getTransactionCount(creator),
+        provider.getFeeData(),
+      ]);
 
-      const registrarController = new ethers.Contract(
-        REGISTRAR_CONTROLLER_ADDRESS[networkId],
-        [
-          ...REGISTRAR_CONTROLLER_ABI,
-          "function valid(string memory name) external view returns (bool)",
-          "function available(string memory name) external view returns (bool)",
-        ],
-        provider
-      );
+      // Encode function call - note the stake is passed as value, not a parameter
+      const data = betEscrowInterface.encodeFunctionData("createBet", [
+        description,
+        creator,
+        opponent,
+        resolver || ethers.ZeroAddress,
+      ]);
 
-      // Check if the name is valid according to contract rules
-      const isValid = await registrarController.valid(basename);
-      console.log(`Is "${basename}" valid format? ${isValid}`);
-
-      if (!isValid) {
-        console.error(
-          `Name "${basename}" does not meet minimum length requirement`
-        );
-        return {
-          basename,
-          isValid: false,
-          isAvailable: false,
-          priceChecked: false,
-        };
-      }
-
-      // Check if the name is available
-      const isAvailable = await registrarController.available(basename);
-      console.log(`Is "${basename}" available? ${isAvailable}`);
-
-      if (!isAvailable) {
-        console.error(`Name "${basename}" is not available`);
-        return {
-          basename,
-          isValid: true,
-          isAvailable: false,
-          priceChecked: false,
-        };
-      }
-
-      // Get the price for 1-year registration
-      const oneYearDuration = 31536000; // 1 year in seconds
-      const price = await registrarController.registerPrice(
-        basename,
-        oneYearDuration
-      );
-      console.log(
-        `Registration price for 1 year: ${ethers.formatEther(price)} ETH`
-      );
-
-      return {
-        basename,
-        isValid,
-        isAvailable,
-        price,
-        priceChecked: true,
+      // Build transaction
+      const baseTx = {
+        to: BET_ESCROW_ADDRESS[networkId],
+        data,
+        nonce,
+        chainId: evm.chainId,
+        type: 2, // EIP-1559 transaction
+        maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
+        maxFeePerGas: feeData.maxFeePerGas,
+        gasLimit: 400000n, // Increase gas limit for safety
+        value: stake, // Total stake amount to be sent
       };
+
+      return await evm.completeEthereumTx({ baseTx, path });
     } catch (error) {
-      console.error(`Error checking basename "${basename}":`, error);
+      console.error("Error in creating bet:", error);
       return {
-        basename,
+        success: false,
         error: error.message,
       };
     }
   },
 
-  getBasenameTx: async (path, basename, senderAddress, targetAddress) => {
+  // Resolve a bet in the BetEscrow contract
+  resolveBetTx: async ({ betId, winner, resolverAddress, path }) => {
     try {
-      // Check basename first and handle any validation errors
-      const nameCheck = await evm.checkBasename(basename);
-      if (!nameCheck.isValid || !nameCheck.isAvailable) {
-        console.error(`Cannot proceed with registration for "${basename}"`);
-        return {
-          success: false,
-          reason: !nameCheck.isValid
-            ? "Invalid name format"
-            : "Name not available",
-        };
-      }
+      // Create contract interface
+      const betEscrowInterface = new ethers.Interface(BET_ESCROW_ABI);
 
-      // Create contract interfaces
-      const registrarControllerInterface = new ethers.Interface([
-        ...REGISTRAR_CONTROLLER_ABI,
-        `function register(${REGISTER_REQUEST_TYPE}) external payable returns (uint256)`,
-      ]);
-
-      const resolverInterface = new ethers.Interface(L2_RESOLVER_ABI);
-
-      // Set registration parameters
-      const registrationDuration = 31536000; // 1 year in seconds
-
+      // Get provider and prepare transaction
       const provider = getProvider();
-      // Get the price for registration
-      const registerPrice = await provider.call({
-        to: REGISTRAR_CONTROLLER_ADDRESS[networkId],
-        data: registrarControllerInterface.encodeFunctionData("registerPrice", [
-          basename,
-          registrationDuration,
-        ]),
-      });
-
-      const price = ethers.toBigInt(registerPrice);
-      console.log(`Registration price: ${ethers.formatEther(price)} ETH`);
 
       // Get the network's current values
-      const [chainId, nonce, feeData] = await Promise.all([
-        provider.getNetwork().then((n) => n.chainId),
-        provider.getTransactionCount(senderAddress),
+      const [nonce, feeData] = await Promise.all([
+        provider.getTransactionCount(resolverAddress),
         provider.getFeeData(),
       ]);
 
-      console.log("Chain ID:", chainId);
-
-      // Calculate the namehash for {basename}.base.eth
-      const namehash = ethers.namehash(`${basename}.base.eth`);
-
-      // Prepare the data array for the registration
-      const dataStruct = [
-        // Create setAddr call to set the address record (ETH Address)
-        resolverInterface.encodeFunctionData("setAddr", [
-          namehash,
-          targetAddress,
-        ]),
-      ];
-
-      // This will allow for reverse resolution (address → name)
-      const reverseName = `${basename}.base.eth`;
-      dataStruct.push(
-        resolverInterface.encodeFunctionData("setText", [
-          namehash,
-          "url",
-          `https://${basename}.base.eth`,
-        ])
-      );
-
-      // Create the RegisterRequest struct
-      const registerRequest = {
-        name: basename,
-        owner: ethers.getAddress(targetAddress),
-        duration: registrationDuration,
-        resolver: L2_RESOLVER_ADDRESS[networkId] || ethers.ZeroAddress,
-        data: dataStruct,
-        reverseRecord: true,
-      };
-
-      // Encode the register function call
-      const data = registrarControllerInterface.encodeFunctionData("register", [
-        registerRequest,
+      // Encode function call
+      const data = betEscrowInterface.encodeFunctionData("resolveBet", [
+        betId,
+        winner,
       ]);
 
-      // STEP 1: Register the basename
-      // Create transaction object for registering the basename
+      // Build transaction
       const baseTx = {
-        to: REGISTRAR_CONTROLLER_ADDRESS[networkId],
+        to: BET_ESCROW_ADDRESS[networkId],
         data,
         nonce,
-        chainId: evm.chainId, // Base Sepolia chain ID
+        chainId: evm.chainId,
         type: 2, // EIP-1559 transaction
         maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
         maxFeePerGas: feeData.maxFeePerGas,
-        gasLimit: 400000n, // Increase gas limit for safety
-        value: price, // Send the registration price
+        gasLimit: 300000n, // Gas limit for resolving
+        value: 0n, // No ETH sent for resolution
       };
 
       return await evm.completeEthereumTx({ baseTx, path });
     } catch (error) {
-      console.error("Error in basename registration handler:", error);
+      console.error("Error in resolving bet:", error);
       return {
         success: false,
         error: error.message,
       };
+    }
+  },
+
+  getBetCount: async () => {
+    try {
+      const contract = await evm.getBankrContract();
+      const bets = await contract.getTotalBets();
+      
+      return parseInt(bets);
+    } catch (error) {
+      console.error("Error getting bet details:", error);
+      return null;
+    }
+  },
+
+  // Get bet details
+  getBetDetails: async (betId) => {
+    try {
+      const contract = await evm.getBankrContract();
+      const bet = await contract.getBet(betId);
+      return {
+        creator: bet.creator,
+        opponent: bet.opponent,
+        stake: bet.stake,
+        description: bet.description,
+        accepted: bet.accepted,
+        resolved: bet.resolved,
+        winner: bet.winner,
+        createdAt: bet.createdAt,
+        resolver: bet.resolver,
+      };
+    } catch (error) {
+      console.error("Error getting bet details:", error);
+      return null;
     }
   },
 
@@ -299,11 +244,16 @@ export const evm = {
     // get the signature from the NEAR contract
     const sigRes = await contractCall({
       accountId: undefined,
-      methodName: "get_signature",
+      contractId: "v1.signer-prod.testnet",
+      methodName: "sign",
       args: {
-        payload: [...serializedTxHash],
-        path,
+        request: {
+          payload: [...serializedTxHash],
+          path,
+          key_version: 0,
+        },
       },
+      attachedDeposit: parseNearAmount("0.5"),
     });
 
     // parse the signature r, s, v into an ethers signature instance
