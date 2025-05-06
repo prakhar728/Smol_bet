@@ -1,6 +1,7 @@
 services:
     web:
         environment:
+            NEAR_SIGNED_AUTH: ${NEAR_SIGNED_AUTH}
             BASE_API_KEY: ${BASE_API_KEY}
             TWITTER_API_KEY: ${TWITTER_API_KEY}
             TWITTER_API_SECRET: ${TWITTER_API_SECRET}
@@ -14,7 +15,7 @@ services:
             MPC_PUBLIC_KEY_MAINNET: ${MPC_PUBLIC_KEY_MAINNET}
             RESTART_PASS: ${RESTART_PASS}
         platform: linux/amd64 # Explicitly set for TDX
-        image: mattdlockyer/shade-agent-basednames:latest@sha256:61923f6f77b607c96420d253e4eaa0764a125728cbe501a95c4477cb2a5e2351
+        image: prakharojha/escrow-agent:latest@sha256:186ce93a221ae77cd9ef294eb0eeed54ef248ae7e35da67536a91f91ff21807f
         container_name: web
         ports:
             - '3000:3000'
