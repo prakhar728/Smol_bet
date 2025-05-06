@@ -115,7 +115,7 @@ impl Contract {
     }
 
     pub fn get_signature(&mut self, payload: Vec<u8>, path: String) -> Promise {
-        self.require_approved_codehash();
+        // self.require_approved_codehash();
 
         ecdsa::get_sig(payload, path, 0)
     }
