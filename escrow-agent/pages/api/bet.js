@@ -8,8 +8,11 @@ import {
 } from "../../utils/twitter-client";
 import { parsePostToBet } from "./lib/intent-parser";
 
+const RESOLVER = "0x325E5Bd3d7d12cA076D0A8f9f5Be7d1De1dd4c83";
 
-const RESOLVER="0x325E5Bd3d7d12cA076D0A8f9f5Be7d1De1dd4c83";
+const SMOL_BET_BOT = "funnyorfud";
+const BANKR_BOT = process.env.BANKRBOT_ID || "bankrbot";
+
 // Configuration constants
 const REPLY_PROCESSING_DELAY = 15000;
 const DEPOSIT_PROCESSING_DELAY = 5000;
@@ -121,30 +124,40 @@ const replyToTweet = async (text, id, secondAttempt = false) => {
  */
 const createBetInContract = async (bet) => {
   try {
-    // Get deployer account (fee collector) to deploy contract if needed
-    const deployer = await evm.getBankrDeployer();
-
-    // Deploy contract if not already deployed
-    const bankrContract = await evm.getBankrContract();
-
-    // Create bet in contract - will be active once both parties send stake
-    const betTx = await bankrContract.createBet(
+    console.log("Creating bet...");
+    const createResult = await evm.createBetTx(
       bet.description,
       bet.creatorAddress,
       bet.opponentAddress,
-      RESOLVER // No third-party resolver for now
+      resolverAddress,
+      stake,
+      createPath
     );
 
-    console.log("Bet created with ID:", betTx.betId);
+    if (!createResult.success) {
+      return console.log({
+        success: false,
+        message: "Failed to create bet",
+        error: createResult.error,
+      });
+    }
+
+    console.log("Bet creation transaction sent, waiting for it to be mined...");
+    console.log("Transaction hash:", createResult.hash);
+
+    await sleep(5000);
+    
+    const betId = (await evm.getBetCount()) - 1;
+    console.log("Bet created with ID:", betId);
 
     return {
       success: true,
-      betId: betTx.betId,
+      betId: betId,
       explorerLink: `${
         networkId === "testnet"
           ? "https://sepolia.basescan.org/tx/"
           : "https://basescan.org/tx/"
-      }${betTx.hash}`,
+      }${createResult.hash}`,
     };
   } catch (e) {
     console.log("Error creating bet in contract:", e);
@@ -263,7 +276,8 @@ const processSettlements = async () => {
   // This will be replaced with proper settlement logic later
   const winnerAddress = bet.creatorAddress;
   const winnerUsername = bet.creatorUsername;
-  const settlementReason = "Temporary automatic settlement (creator always wins)";
+  const settlementReason =
+    "Temporary automatic settlement (creator always wins)";
 
   /*
   // Original implementation commented out
@@ -446,7 +460,7 @@ const processDeposits = async () => {
           bet.stake * 2n
         )} ETH\n\nDescription: "${
           bet.description
-        }"\n\nEither party can trigger settlement by tagging @funnyorfud with "settle bet"`,
+        }"\n\nEither party can trigger settlement by tagging @${SMOL_BET_BOT} with "settle bet"`,
         replyId
       );
 
@@ -572,7 +586,7 @@ const processAddressRequest = async () => {
     if (conversationId) {
       // Get replies in conversation
       const replies = await client.v2.search(
-        `conversation_id:${conversationId} from:bankrbot`,
+        `conversation_id:${conversationId} from:${BANKR_BOT}`,
         {
           "tweet.fields": "author_id,created_at,referenced_tweets",
           expansions: "referenced_tweets.id",
@@ -581,7 +595,7 @@ const processAddressRequest = async () => {
 
       // Look for bankrbot reply with addresses
       for await (const reply of replies) {
-        if (reply.author_id === process.env.BANKRBOT_ID) {
+        if (reply.author_id === BANKR_BOT) {
           const tweetText = reply.text.toLowerCase();
 
           // Extract addresses from reply (this regex pattern is simplified)
@@ -651,6 +665,8 @@ const processReplies = async () => {
     // Parse bet from tweet text
     const betInfo = parsePostToBet(tweet.text);
 
+    console.log("Got the betInfo", betInfo);
+
     if (!betInfo || betInfo.contains("INVALID")) {
       console.log("Could not parse bet from tweet");
       await replyToTweet(
@@ -664,6 +680,12 @@ const processReplies = async () => {
     const opponentUsername = betInfo.opponent.substring(1);
     const stakeAmount = betInfo.amount.split(" ")[0];
     const description = betInfo.bet_terms;
+
+    console.log("These are the info", {
+      opponentUsername,
+      stakeAmount,
+      description,
+    });
 
     // Convert stake to wei
     const stake = BigInt(Math.floor(parseFloat(stakeAmount) * 1e18));
@@ -679,7 +701,7 @@ const processReplies = async () => {
 
     // Ask @bankrbot for addresses
     const response = await replyToTweet(
-      `@bankrbot What are the addresses for @${tweet.author_username} and @${opponentUsername}?`,
+      `@${BANKR_BOT} What are the addresses for @${tweet.author_username} and @${opponentUsername}?`,
       tweet.id
     );
 
@@ -721,7 +743,7 @@ const startProcessingQueues = () => {
   processAddressConfirmation();
   processDeposits();
   processSettlements();
-//   processRefunds();  // NO REFUNDS FOR TESTNET
+  //   processRefunds();  // NO REFUNDS FOR TESTNET
 };
 
 /**
@@ -780,14 +802,14 @@ export default async function search(req, res) {
   console.log("Search start_time:", start_time);
 
   // Find bet creation tweets
-  const betTweetGenerator = await client.v2.search('@funnyorfud "bet"', {
+  const betTweetGenerator = await client.v2.search(`@${SMOL_BET_BOT} "bet"`, {
     start_time,
     "tweet.fields": "author_id,created_at,referenced_tweets,author_username",
   });
 
   // Find settlement request tweets
   const settleTweetGenerator = await client.v2.search(
-    '@funnyorfud "settle bet"',
+    `@${SMOL_BET_BOT} "settle bet"`,
     {
       start_time,
       "tweet.fields": "author_id,created_at,referenced_tweets,author_username",
