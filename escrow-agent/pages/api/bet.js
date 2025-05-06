@@ -901,6 +901,9 @@ export default async function search(req, res) {
     });
   } catch (e) {
     console.error("Error in search():", e);
+    console.log(e.data);
+    console.log(e.rateLimit);
+    
     res.status(500).json({ error: "Internal server error" });
   }
 }
