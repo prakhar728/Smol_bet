@@ -6,7 +6,7 @@ import {
   getConversationId,
   getLatestConversationTweet,
 } from "../../utils/twitter-client";
-import { parsePostToBet } from "./lib/intent-parser";
+import { parsePostToBet, resolveBetWithAI } from "./lib/intent-parser";
 
 const SMOL_BET_BOT = "funnyorfud";
 const BANKR_BOT = process.env.BANKRBOT_ID || "bankrbot";
@@ -293,7 +293,7 @@ const processSettlements = async () => {
   let winnerAddress = bet.creatorAddress;
   let winnerUsername = bet.creatorUsername;
 
-  const resolution = await resolveBetWithAI(description);
+  const resolution = await resolveBetWithAI(bet.description);
 
   let winner = "";
   if (resolution.toLowerCase().includes("true")) {
@@ -585,10 +585,11 @@ const processAddressRequest = async () => {
 
       const replyUserMap = createUserMap(replies);
 
-      reply.author_username = replyUserMap.get(reply.author_id);
 
       // Look for bankrbot reply with addresses
       for await (const reply of replies) {
+      reply.author_username = replyUserMap.get(reply.author_id);
+
         if (reply.author_username.toLowerCase() === BANKR_BOT.toLowerCase()) {
           const tweetText = reply.text.toLowerCase();
 
@@ -661,7 +662,7 @@ const processReplies = async () => {
 
     console.log("Got the betInfo", betInfo);
 
-    if (!betInfo || betInfo.contains("INVALID")) {
+    if (!betInfo || betInfo.includes("INVALID")) {
       console.log("Could not parse bet from tweet");
       await replyToTweet(
         `Sorry, I couldn't understand the bet format. Please use the format: "@username I bet you X ETH that [condition]"`,
@@ -842,7 +843,7 @@ export default async function search(req, res) {
   const limit = 99;
   let latestValidTimestamp = 0;
 
-  const betUserMap = createUserMap(betTweetResponse);
+  const betUserMap = createUserMap(betTweetGenerator);
 
   // Process bet creation tweets
   for await (const tweet of betTweetGenerator) {
@@ -886,7 +887,7 @@ export default async function search(req, res) {
   }
 
   // Create user mapping for settlement tweets
-  const settleUserMap = createUserMap(settleTweetResponse);
+  const settleUserMap = createUserMap(settleTweetGenerator);
 
   // Process settlement request tweets
   seen = 0;
