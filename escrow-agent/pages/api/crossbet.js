@@ -545,7 +545,10 @@ const processReplies = async () => {
 
   try {
     // Parse bet from tweet text
-    const betInfo = parsePostToBet(tweet.text);
+    const betInfo = await parsePostToBet(tweet.text);
+
+    console.log(betInfo);
+    
 
     if (!betInfo || betInfo.includes("INVALID")) {
       console.log("Could not parse bet from tweet");
