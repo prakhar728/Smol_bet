@@ -8,8 +8,6 @@ import {
 } from "../../utils/twitter-client";
 import { parsePostToBet } from "./lib/intent-parser";
 
-const RESOLVER = "0x325E5Bd3d7d12cA076D0A8f9f5Be7d1De1dd4c83";
-
 const SMOL_BET_BOT = "funnyorfud";
 const BANKR_BOT = process.env.BANKRBOT_ID || "bankrbot";
 
@@ -44,6 +42,11 @@ const SEARCH_ONLY = true;
 
 // Twitter client (initialized on first search)
 let client = null;
+
+const createUserMap = (response) => {
+  const users = response.includes?.users || [];
+  return new Map(users.map((user) => [user.id, user.username]));
+};
 
 // Sleep helper function
 const sleepThen = async (dur, fn) => {
@@ -575,13 +578,18 @@ const processAddressRequest = async () => {
         `conversation_id:${conversationId} from:${BANKR_BOT}`,
         {
           "tweet.fields": "author_id,created_at,referenced_tweets",
-          expansions: "referenced_tweets.id",
+          expansions: "referenced_tweets.id,author_id",
+          "user.fields": "username",
         }
       );
 
+      const replyUserMap = createUserMap(replies);
+
+      reply.author_username = replyUserMap.get(reply.author_id);
+
       // Look for bankrbot reply with addresses
       for await (const reply of replies) {
-        if (reply.author_id === BANKR_BOT) {
+        if (reply.author_username.toLowerCase() === BANKR_BOT.toLowerCase()) {
           const tweetText = reply.text.toLowerCase();
 
           // Extract addresses from reply (this regex pattern is simplified)
@@ -787,38 +795,54 @@ export default async function search(req, res) {
 
   console.log("Search start_time:", start_time);
 
+  console.log(`Searching for @${SMOL_BET_BOT} "bet"`);
+
   // Find bet creation tweets
   const betTweetGenerator = await client.v2.search(`@${SMOL_BET_BOT} "bet"`, {
     start_time,
-    "tweet.fields": "author_id,created_at,referenced_tweets,author_username",
+    "tweet.fields": "author_id,created_at,referenced_tweets",
+    expansions: "author_id",
+    "user.fields": "username",
   });
+
+  await sleep(10000);
 
   // Find settlement request tweets
   const settleTweetGenerator = await client.v2.search(
     `@${SMOL_BET_BOT} "settle bet"`,
     {
       start_time,
-      "tweet.fields": "author_id,created_at,referenced_tweets,author_username",
+      "tweet.fields": "author_id,created_at,referenced_tweets",
+      expansions: "author_id",
+      "user.fields": "username",
     }
   );
 
   // Check rate limits
-  console.log("REMAINING API CALLS:", betTweetGenerator._rateLimit.remaining);
   console.log(
-    "RESET:",
-    Number(
-      (betTweetGenerator._rateLimit.reset - Date.now() / 1000) / 60
-    ).toPrecision(4) + " minutes"
+    "REMAINING API CALLS:",
+    betTweetGenerator._rateLimit?.remaining || "unknown"
   );
 
-  if (betTweetGenerator._rateLimit.remaining <= 0) {
-    waitingForReset = betTweetGenerator._rateLimit.reset;
+  if (betTweetGenerator._rateLimit?.reset) {
+    console.log(
+      "RESET:",
+      Number(
+        (betTweetGenerator._rateLimit.reset - Date.now() / 1000) / 60
+      ).toPrecision(4) + " minutes"
+    );
+
+    if (betTweetGenerator._rateLimit.remaining <= 0) {
+      waitingForReset = betTweetGenerator._rateLimit.reset;
+    }
   }
 
   // Process new bet tweets
   let seen = 0;
   const limit = 99;
   let latestValidTimestamp = 0;
+
+  const betUserMap = createUserMap(betTweetResponse);
 
   // Process bet creation tweets
   for await (const tweet of betTweetGenerator) {
@@ -827,6 +851,9 @@ export default async function search(req, res) {
     // Get unix timestamp in seconds
     console.log("Reading bet tweet:", tweet.id);
     tweet.timestamp = new Date(tweet.created_at).getTime() / 1000;
+
+    // Add username to tweet object
+    tweet.author_username = betUserMap.get(tweet.author_id);
 
     // Skip if already in a pending queue
     if (
@@ -858,6 +885,9 @@ export default async function search(req, res) {
     }
   }
 
+  // Create user mapping for settlement tweets
+  const settleUserMap = createUserMap(settleTweetResponse);
+
   // Process settlement request tweets
   seen = 0;
   for await (const tweet of settleTweetGenerator) {
@@ -866,6 +896,14 @@ export default async function search(req, res) {
     // Get unix timestamp in seconds
     console.log("Reading settlement tweet:", tweet.id);
     tweet.timestamp = new Date(tweet.created_at).getTime() / 1000;
+
+    // Add username to tweet object
+    tweet.author_username = settleUserMap.get(tweet.author_id);
+
+    if (!tweet.author_username) {
+      console.log("Could not find username for settlement tweet:", tweet.id);
+      continue;
+    }
 
     // Skip if already processed
     if (tweet.timestamp <= lastTweetTimestamp) {
