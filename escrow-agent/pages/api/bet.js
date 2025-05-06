@@ -585,10 +585,9 @@ const processAddressRequest = async () => {
 
       const replyUserMap = createUserMap(replies);
 
-
       // Look for bankrbot reply with addresses
       for await (const reply of replies) {
-      reply.author_username = replyUserMap.get(reply.author_id);
+        reply.author_username = replyUserMap.get(reply.author_id);
 
         if (reply.author_username.toLowerCase() === BANKR_BOT.toLowerCase()) {
           const tweetText = reply.text.toLowerCase();
@@ -745,8 +744,8 @@ const startProcessingQueues = () => {
  * Main search function to find bet tweets and settlement requests
  */
 export default async function search(req, res) {
-  // Handle admin operations
   try {
+    // --- Handle admin triggers (restart, manual settlement) ---
     const url = new URL("https://example.com" + req?.url);
     const restart = url.searchParams.get("restart");
     const manualSettle = url.searchParams.get("settle");
@@ -758,7 +757,6 @@ export default async function search(req, res) {
       }
       if (manualSettle) {
         const [betId, winner] = manualSettle.split(",");
-        // Find bet in pendingSettlement
         const betIndex = pendingSettlement.findIndex((b) => b.id === betId);
         if (betIndex >= 0) {
           const bet = pendingSettlement[betIndex];
@@ -771,202 +769,140 @@ export default async function search(req, res) {
         }
       }
     }
-  } catch (e) {
-    console.log("Error handling admin operations:", e);
-  }
 
-  // Rate limited?
-  if (waitingForReset !== 0 && Date.now() / 1000 < waitingForReset) {
-    return res.status(429).json({ error: "Rate limited" });
-  }
-  waitingForReset = 0;
+    // --- Handle rate limit pause ---
+    if (waitingForReset !== 0 && Date.now() / 1000 < waitingForReset) {
+      return res.status(429).json({ error: "Rate limited" });
+    }
+    waitingForReset = 0;
 
-  // Initialize Twitter client
-  const consumerClient = new TwitterApi({
-    appKey: process.env.TWITTER_API_KEY,
-    appSecret: process.env.TWITTER_API_SECRET,
-  });
-  client = await consumerClient.appLogin();
+    // --- Setup Twitter client ---
+    const consumerClient = new TwitterApi({
+      appKey: process.env.TWITTER_API_KEY,
+      appSecret: process.env.TWITTER_API_SECRET,
+    });
+    client = await consumerClient.appLogin();
 
-  // Search for new bet tweets
-  const start_time =
-    lastTweetTimestamp > 0
-      ? new Date(lastTweetTimestamp * 1000 + 1000).toISOString()
-      : undefined;
+    // --- Time filter ---
+    const start_time =
+      lastTweetTimestamp > 0
+        ? new Date(lastTweetTimestamp * 1000 + 1000).toISOString()
+        : undefined;
 
-  console.log("Search start_time:", start_time);
+    let latestValidTimestamp = 0;
 
-  console.log(`Searching for @${SMOL_BET_BOT} "bet"`);
-
-  // Find bet creation tweets
-  const betTweetGenerator = await client.v2.search(`@${SMOL_BET_BOT} "bet"`, {
-    start_time,
-    "tweet.fields": "author_id,created_at,referenced_tweets",
-    expansions: "author_id",
-    "user.fields": "username",
-  });
-
-  await sleep(10000);
-
-  // Find settlement request tweets
-  const settleTweetGenerator = await client.v2.search(
-    `@${SMOL_BET_BOT} "settle bet"`,
-    {
+    // === Fetch and Process Bet Tweets ===
+    const betPaginator = await client.v2.search(`@${SMOL_BET_BOT} "bet"`, {
       start_time,
-      "tweet.fields": "author_id,created_at,referenced_tweets",
+      max_results: 100,
+      "tweet.fields": "author_id,created_at",
       expansions: "author_id",
       "user.fields": "username",
-    }
-  );
+    });
 
-  // Check rate limits
-  console.log(
-    "REMAINING API CALLS:",
-    betTweetGenerator._rateLimit?.remaining || "unknown"
-  );
+    const betPage = await betPaginator.fetchNext();
+    const betUserMap = createUserMap(betPage);
 
-  if (betTweetGenerator._rateLimit?.reset) {
-    console.log(
-      "RESET:",
-      Number(
-        (betTweetGenerator._rateLimit.reset - Date.now() / 1000) / 60
-      ).toPrecision(4) + " minutes"
-    );
+    for (const tweet of betPage.data ?? []) {
+      tweet.timestamp = new Date(tweet.created_at).getTime() / 1000;
+      tweet.author_username = betUserMap.get(tweet.author_id);
 
-    if (betTweetGenerator._rateLimit.remaining <= 0) {
-      waitingForReset = betTweetGenerator._rateLimit.reset;
-    }
-  }
+      if (!tweet.author_username) continue;
 
-  // Process new bet tweets
-  let seen = 0;
-  const limit = 99;
-  let latestValidTimestamp = 0;
+      if (
+        tweet.timestamp <= lastTweetTimestamp ||
+        pendingReply.some((t) => t.id === tweet.id) ||
+        pendingAddressRequest.some((t) => t.id === tweet.id) ||
+        pendingAddressConfirmation.some((t) => t.id === tweet.id) ||
+        pendingDeposits.some((t) => t.id === tweet.id) ||
+        pendingSettlement.some((t) => t.id === tweet.id)
+      ) {
+        continue;
+      }
 
-  const betUserMap = createUserMap(betTweetGenerator);
+      if (tweet.timestamp > latestValidTimestamp) {
+        latestValidTimestamp = tweet.timestamp;
+      }
 
-  // Process bet creation tweets
-  for await (const tweet of betTweetGenerator) {
-    if (++seen > limit) break;
-
-    // Get unix timestamp in seconds
-    console.log("Reading bet tweet:", tweet.id);
-    tweet.timestamp = new Date(tweet.created_at).getTime() / 1000;
-
-    // Add username to tweet object
-    tweet.author_username = betUserMap.get(tweet.author_id);
-
-    // Skip if already in a pending queue
-    if (
-      pendingReply.findIndex((t) => t.id === tweet.id) > -1 ||
-      pendingAddressRequest.findIndex((t) => t.id === tweet.id) > -1 ||
-      pendingAddressConfirmation.findIndex((t) => t.id === tweet.id) > -1 ||
-      pendingDeposits.findIndex((t) => t.id === tweet.id) > -1 ||
-      pendingSettlement.findIndex((t) => t.id === tweet.id) > -1
-    ) {
-      continue;
-    }
-
-    // Skip if already processed
-    if (tweet.timestamp <= lastTweetTimestamp) {
-      continue;
-    }
-
-    if (latestValidTimestamp === 0) {
-      latestValidTimestamp = tweet.timestamp;
-    }
-
-    // Add to pendingReply queue
-    console.log("Bet tweet qualified:", tweet.id);
-    tweet.replyAttempt = 0;
-    if (!SEARCH_ONLY) {
-      pendingReply.push(tweet);
-    } else {
-      console.log(tweet);
-    }
-  }
-
-  // Create user mapping for settlement tweets
-  const settleUserMap = createUserMap(settleTweetGenerator);
-
-  // Process settlement request tweets
-  seen = 0;
-  for await (const tweet of settleTweetGenerator) {
-    if (++seen > limit) break;
-
-    // Get unix timestamp in seconds
-    console.log("Reading settlement tweet:", tweet.id);
-    tweet.timestamp = new Date(tweet.created_at).getTime() / 1000;
-
-    // Add username to tweet object
-    tweet.author_username = settleUserMap.get(tweet.author_id);
-
-    if (!tweet.author_username) {
-      console.log("Could not find username for settlement tweet:", tweet.id);
-      continue;
-    }
-
-    // Skip if already processed
-    if (tweet.timestamp <= lastTweetTimestamp) {
-      continue;
-    }
-
-    if (latestValidTimestamp === 0 || tweet.timestamp > latestValidTimestamp) {
-      latestValidTimestamp = tweet.timestamp;
-    }
-
-    // Find related active bet
-    // This is a simplified approach - in production we would need more robust matching
-    const activeBets = pendingSettlement.filter(
-      (bet) =>
-        bet.creatorUsername === tweet.author_username ||
-        bet.opponentUsername === tweet.author_username
-    );
-
-    if (activeBets.length > 0) {
-      // Take the most recent bet if multiple matches found
-      const targetBet = activeBets.sort((a, b) => b.timestamp - a.timestamp)[0];
-      console.log("Found matching active bet for settlement:", targetBet.id);
-
-      // Add settlement info
-      targetBet.settlementTweet = tweet;
-      targetBet.settlementAttempt = 0;
-
-      // Move bet to beginning of pendingSettlement queue for priority processing
-      pendingSettlement.splice(pendingSettlement.indexOf(targetBet), 1);
-      pendingSettlement.unshift(targetBet);
-    } else {
-      console.log("No matching active bet found for settlement request");
-
-      // Reply to user that no active bet was found
+      tweet.replyAttempt = 0;
       if (!SEARCH_ONLY) {
-        await replyToTweet(
-          `Sorry @${tweet.author_username}, I couldn't find an active bet for you to settle. Make sure the bet is active first.`,
-          tweet.id
-        );
+        pendingReply.push(tweet);
+      } else {
+        console.log("[Search Only] Found valid bet tweet:", tweet);
       }
     }
+
+    // === Fetch and Process Settlement Tweets ===
+    const settlePaginator = await client.v2.search(
+      `@${SMOL_BET_BOT} "settle bet"`,
+      {
+        start_time,
+        max_results: 100,
+        "tweet.fields": "author_id,created_at",
+        expansions: "author_id",
+        "user.fields": "username",
+      }
+    );
+
+    const settlePage = await settlePaginator.fetchNext();
+    const settleUserMap = createUserMap(settlePage);
+
+    for (const tweet of settlePage.data ?? []) {
+      tweet.timestamp = new Date(tweet.created_at).getTime() / 1000;
+      tweet.author_username = settleUserMap.get(tweet.author_id);
+
+      if (!tweet.author_username) continue;
+
+      if (tweet.timestamp > latestValidTimestamp) {
+        latestValidTimestamp = tweet.timestamp;
+      }
+
+      const matchingBets = pendingSettlement.filter(
+        (b) =>
+          b.creatorUsername === tweet.author_username ||
+          b.opponentUsername === tweet.author_username
+      );
+
+      if (matchingBets.length > 0) {
+        const bet = matchingBets.sort((a, b) => b.timestamp - a.timestamp)[0];
+        console.log("Matched settlement tweet to bet:", bet.id);
+
+        bet.settlementTweet = tweet;
+        bet.settlementAttempt = 0;
+
+        pendingSettlement.splice(pendingSettlement.indexOf(bet), 1);
+        pendingSettlement.unshift(bet);
+      } else {
+        console.log("No matching active bet for settlement tweet:", tweet.id);
+        if (!SEARCH_ONLY) {
+          await replyToTweet(
+            `Sorry @${tweet.author_username}, I couldn't find an active bet for you to settle. Make sure the bet is active first.`,
+            tweet.id
+          );
+        }
+      }
+    }
+
+    // --- Update timestamp ---
+    if (latestValidTimestamp > 0) {
+      lastTweetTimestamp = latestValidTimestamp;
+    }
+
+    // --- Start queue processing ---
+    startProcessingQueues();
+
+    // --- Respond with queue state ---
+    res.status(200).json({
+      pendingReply: pendingReply.length,
+      pendingAddressRequest: pendingAddressRequest.length,
+      pendingAddressConfirmation: pendingAddressConfirmation.length,
+      pendingDeposits: pendingDeposits.length,
+      pendingSettlement: pendingSettlement.length,
+    });
+  } catch (e) {
+    console.error("Error in search():", e);
+    res.status(500).json({ error: "Internal server error" });
   }
-
-  // Update last processed tweet timestamp
-  if (latestValidTimestamp > 0) {
-    lastTweetTimestamp = latestValidTimestamp;
-  }
-
-  console.log("Last tweet timestamp:", lastTweetTimestamp);
-  console.log("Pending reply queue length:", pendingReply.length);
-  console.log("Pending settlement queue length:", pendingSettlement.length);
-
-  // Start processing if not already running
-  startProcessingQueues();
-
-  res.status(200).json({
-    pendingReply: pendingReply.length,
-    pendingAddressRequest: pendingAddressRequest.length,
-    pendingAddressConfirmation: pendingAddressConfirmation.length,
-    pendingDeposits: pendingDeposits.length,
-    pendingSettlement: pendingSettlement.length,
-  });
 }
 
 /**
