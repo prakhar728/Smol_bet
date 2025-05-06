@@ -24,3 +24,26 @@ export const parsePostToBet = async (message) => {
 
   return threadState.data[0].content[0].text.value;
 };
+
+export const resolveBetWithAI = async (message) => {
+  if (!AUTH) {
+    console.log("Couldn't find AUTH for Near-AI");
+    return;
+  }
+
+  const newThread = await createThread(AUTH);
+  const agentId = "ai-creator.near/Bet_Resolver/latest";
+
+  if (!newThread || !newThread.id) {
+    console.log("Couldn't create a new thread");
+    return;
+  }
+
+  const threadId = newThread.id;
+
+  await runAgent(AUTH, agentId, threadId, message);
+
+  const threadState = await fetchThreadState(AUTH, threadId);
+
+  return threadState.data[0].content[0].text.value;
+}

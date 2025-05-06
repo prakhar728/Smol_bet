@@ -129,9 +129,9 @@ const createBetInContract = async (bet) => {
       bet.description,
       bet.creatorAddress,
       bet.opponentAddress,
-      resolverAddress,
-      stake,
-      createPath
+      bet.depositAddress,
+      bet.stake * 2n,
+      bet.betPath
     );
 
     if (!createResult.success) {
@@ -146,7 +146,7 @@ const createBetInContract = async (bet) => {
     console.log("Transaction hash:", createResult.hash);
 
     await sleep(5000);
-    
+
     const betId = (await evm.getBetCount()) - 1;
     console.log("Bet created with ID:", betId);
 
@@ -170,10 +170,23 @@ const createBetInContract = async (bet) => {
  */
 const resolveBetInContract = async (bet, winner) => {
   try {
-    const bankrContract = await evm.getBankrContract();
+    const resolveResult = await evm.resolveBetTx(
+      bet.betId,
+      winner,
+      bet.depositAddress,
+      bet.betPath
+    );
 
-    // Call resolveBet function to pay out winner
-    const resolutionTx = await bankrContract.resolveBet(bet.betId, winner);
+    if (!resolveResult.success) {
+      return console.log({
+        success: false,
+        message: "Failed to resolve bet",
+        error: resolveResult.error,
+      });
+    }
+
+    // Wait for 3 seconds to allow resolution transaction to propagate
+    await sleep(3000);
 
     return {
       success: true,
@@ -181,7 +194,7 @@ const resolveBetInContract = async (bet, winner) => {
         networkId === "testnet"
           ? "https://sepolia.basescan.org/tx/"
           : "https://basescan.org/tx/"
-      }${resolutionTx.hash}`,
+      }${resolveResult.hash}`,
     };
   } catch (e) {
     console.log("Error resolving bet in contract:", e);
@@ -274,48 +287,21 @@ const processSettlements = async () => {
 
   // TEMPORARY IMPLEMENTATION: Always make the creator the winner
   // This will be replaced with proper settlement logic later
-  const winnerAddress = bet.creatorAddress;
-  const winnerUsername = bet.creatorUsername;
-  const settlementReason =
-    "Temporary automatic settlement (creator always wins)";
+  let winnerAddress = bet.creatorAddress;
+  let winnerUsername = bet.creatorUsername;
 
-  /*
-  // Original implementation commented out
-  // Parse tweet text to determine winner
-  // This would need more sophisticated logic to accurately determine outcome
-  // For now, we'll look for specific settlement phrases
+  const resolution = await resolveBetWithAI(description);
 
-  let winnerAddress = null;
-  let winnerUsername = null;
-  let settlementReason = "";
-
-  if (bet.settlementTweet && bet.settlementTweet.text) {
-    const tweetText = bet.settlementTweet.text.toLowerCase();
-
-    if (tweetText.includes(`@${bet.creatorUsername.toLowerCase()} won`)) {
-      winnerAddress = bet.creatorAddress;
-      winnerUsername = bet.creatorUsername;
-      settlementReason = "Opponent confirmed";
-    } else if (
-      tweetText.includes(`@${bet.opponentUsername.toLowerCase()} won`)
-    ) {
-      winnerAddress = bet.opponentAddress;
-      winnerUsername = bet.opponentUsername;
-      settlementReason = "Creator confirmed";
-    } else if (tweetText.includes("near up 10%")) {
-      // Example condition check based on bet description
-      if (bet.description.toLowerCase().includes("near will be up by 10%")) {
-        winnerAddress = bet.creatorAddress;
-        winnerUsername = bet.creatorUsername;
-        settlementReason = "Condition verified: NEAR is up by 10%";
-      } else {
-        winnerAddress = bet.opponentAddress;
-        winnerUsername = bet.opponentUsername;
-        settlementReason = "Condition not met: NEAR is not up by 10%";
-      }
-    }
+  let winner = "";
+  if (resolution.toLowerCase().includes("true")) {
+    winnerAddress = bet.creatorAddress;
+    winnerUsername = bet.creatorUsername;
+  } else {
+    winnerAddress = bet.opponentAddress;
+    winnerUsername = bet.opponentUsername;
   }
-  */
+
+  const settlementReason = `The bet parser resolves to ${resolution}`;
 
   if (winnerAddress) {
     // Resolve bet in the contract

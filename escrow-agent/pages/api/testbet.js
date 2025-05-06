@@ -1,6 +1,7 @@
 import { networkId, generateAddress } from '@neardefi/shade-agent-js';
 import { evm } from '../../utils/evm';
 import { ethers } from 'ethers';
+import { resolveBetWithAI } from './lib/intent-parser';
 
 // Helper sleep function to add delays
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -10,7 +11,7 @@ export default async function testBet(req, res) {
         // Define test parameters
         const creator = '0xa9190336A4D79bAFc65a6575236f62b6f15370e9';
         const opponent = '0xFF6fBBe67630260A49a95674AF4Be968C01dE1DC';
-        const description = "TestBet: Creator will win " + Date.now();
+        const description = "Lucknow Super Giants will beat Punjab kings on May4th, 2025.";
         const stake = ethers.parseEther('0.001'); // 0.01 ETH stake
         
         // Generate a unique path for this test
@@ -81,7 +82,19 @@ export default async function testBet(req, res) {
         // Wait another 5 seconds before resolving the bet
         console.log('Waiting 5 seconds before resolving bet...');
         await sleep(5000);
+
+        const resolution = await resolveBetWithAI(description);
+
+        console.log(resolution);
+        console.log(resolution.toLowerCase());
         
+        let winner = '';
+        if ((resolution.toLowerCase()).includes("true"))
+            winner = creator;
+        else
+            winner = opponent;
+        
+
         // Generate a new path for resolution
         const resolvePath = createPath;
         
@@ -89,7 +102,7 @@ export default async function testBet(req, res) {
         console.log('Resolving bet...');
         const resolveResult = await evm.resolveBetTx({
             betId,
-            winner: creator, // Creator always wins in this test
+            winner: winner, // Creator always wins in this test
             resolverAddress,
             path: resolvePath,
         });
