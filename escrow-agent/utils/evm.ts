@@ -70,7 +70,7 @@ export const evm = {
       const provider = getProvider();
 
       console.log("Creating bet with creator", creator);
-      
+
       // Get the network's current values
       const [nonce, feeData] = await Promise.all([
         provider.getTransactionCount(creator),
@@ -156,7 +156,7 @@ export const evm = {
     try {
       const contract = await evm.getBankrContract();
       const bets = await contract.getTotalBets();
-      
+
       return parseInt(bets);
     } catch (error) {
       console.error("Error getting bet details:", error);
@@ -246,16 +246,11 @@ export const evm = {
     // get the signature from the NEAR contract
     const sigRes = await contractCall({
       accountId: undefined,
-      contractId: "v1.signer-prod.testnet",
-      methodName: "sign",
+      methodName: "get_signature",
       args: {
-        request: {
-          payload: [...serializedTxHash],
-          path,
-          key_version: 0,
-        },
+        payload: [...serializedTxHash],
+        path,
       },
-      attachedDeposit: parseNearAmount("0.5"),
     });
 
     // parse the signature r, s, v into an ethers signature instance

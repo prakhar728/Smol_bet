@@ -105,7 +105,7 @@ impl Contract {
         let codehash = collateral::verify_codehash(tcb_info, rtmr3);
 
         // uncomment this line to only allow workers to register if their codehash arg is approved
-        // require!(self.approved_codehashes.contains(&codehash));
+        require!(self.approved_codehashes.contains(&codehash));
 
         let predecessor = env::predecessor_account_id();
         self.worker_by_account_id
@@ -115,7 +115,7 @@ impl Contract {
     }
 
     pub fn get_signature(&mut self, payload: Vec<u8>, path: String) -> Promise {
-        // self.require_approved_codehash();
+        self.require_approved_codehash();
 
         ecdsa::get_sig(payload, path, 0)
     }
