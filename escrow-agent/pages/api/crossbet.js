@@ -1,9 +1,9 @@
+import { searchTweetsWithMasa } from "../../utils/social/masa";
+import { crosspostReply } from "../../utils/social/crosspost";
 import { generateAddress, networkId } from "@neardefi/shade-agent-js";
 import { evm } from "../../utils/evm";
 import { fetchJson, sleep } from "../../utils/utils";
 import { parsePostToBet, resolveBetWithAI } from "./lib/intent-parser";
-import { searchTweetsWithMasa } from "../../utils/social/masa";
-import { crosspostReply } from "../../utils/social/crosspost";
 
 // Bot configuration
 const SMOL_BET_BOT = "funnyorfud";
@@ -28,7 +28,9 @@ const pendingRefund = []; // Failed bets requiring refunds
 const completedBets = []; // Successfully settled bets (for record-keeping)
 
 // Keep track of the last processed tweet
-let lastSearchTimestamp = parseInt(process.env.LAST_SEARCH_TIMESTAMP) || Math.floor(Date.now() / 1000) - 86400; // Default to 24 hours ago
+let lastSearchTimestamp =
+  parseInt(process.env.LAST_SEARCH_TIMESTAMP) ||
+  Math.floor(Date.now() / 1000) - 86400; // Default to 24 hours ago
 
 // Toggle for testing mode
 const FAKE_REPLY = process.env.FAKE_REPLY === "true";
@@ -228,7 +230,7 @@ const processSettlements = async () => {
 
   let winnerAddress = "";
   let winnerUsername = "";
-  
+
   if (resolution.toLowerCase().includes("true")) {
     winnerAddress = bet.creatorAddress;
     winnerUsername = bet.creatorUsername;
@@ -547,8 +549,7 @@ const processReplies = async () => {
     // Parse bet from tweet text
     const betInfo = await parsePostToBet(tweet.text);
 
-    console.log(betInfo);
-    
+    console.log("Parsed bet info:", betInfo);
 
     if (!betInfo || betInfo.includes("INVALID")) {
       console.log("Could not parse bet from tweet");
@@ -562,9 +563,18 @@ const processReplies = async () => {
       return;
     }
 
-    const opponentUsername = betInfo.opponent.substring(1);
-    const stakeAmount = betInfo.amount.split(" ")[0];
-    const description = betInfo.bet_terms;
+    let betParsedJson = JSON.parse(betInfo);
+    console.log(betParsedJson);
+    
+    const opponentUsername = betParsedJson.opponent.substring(1);
+    const stakeAmount = betParsedJson.amount.split(" ")[0];
+    const description = betParsedJson.bet_terms;
+
+    console.log("Parsed components:", {
+      opponentUsername,
+      stakeAmount,
+      description,
+    });
 
     // Convert stake to wei
     const stake = BigInt(Math.floor(parseFloat(stakeAmount) * 1e18));
@@ -602,13 +612,18 @@ const processReplies = async () => {
         description: description,
         addressRequestTweetId: response.data.id,
         addressRequestAttempt: 0,
-        timestamp: tweet.created_at ? new Date(tweet.created_at).getTime() / 1000 : Math.floor(Date.now() / 1000),
+        timestamp: tweet.created_at
+          ? new Date(tweet.created_at).getTime() / 1000
+          : Math.floor(Date.now() / 1000),
       };
+
+      console.log("Created bet object:", bet);
 
       // Move to address request queue
       pendingAddressRequest.push(bet);
     } else {
       // Retry reply
+      console.log("Failed to get response from crosspostReply, retrying");
       tweet.replyAttempt++;
       pendingReply.push(tweet);
     }
@@ -639,35 +654,44 @@ const startProcessingQueues = () => {
  */
 const searchTwitter = async () => {
   console.log("Searching for new bets and settlement requests...");
-  console.log("Last search timestamp:", new Date(lastSearchTimestamp * 1000).toISOString());
+  console.log(
+    "Last search timestamp:",
+    new Date(lastSearchTimestamp * 1000).toISOString()
+  );
 
   try {
     // Search for bet tweets
-    const betTweets = await searchTweetsWithMasa(
-      `@${SMOL_BET_BOT} "bet"`,
-      100
-    );
+    const betTweets = await searchTweetsWithMasa(`@${SMOL_BET_BOT} "bet"`, 100);
 
     console.log("Log betTweets", betTweets);
-    
 
     if (betTweets && betTweets.length > 0) {
       console.log(`Found ${betTweets.length} potential bet tweets`);
       let latestTimestamp = lastSearchTimestamp;
 
       for (const tweet of betTweets) {
-        const tweetTimestamp = tweet.created_at 
-          ? new Date(tweet.created_at).getTime() / 1000 
+        // Extract fields from Masa API response format
+        const processedTweet = {
+          id: tweet.ExternalID,
+          text: tweet.Content,
+          author_username: tweet.Metadata.username || "unknown_user",
+          conversation_id: tweet.Metadata.conversation_id,
+          created_at: tweet.Metadata.created_at,
+        };
+
+        // Get timestamp from Masa's created_at field
+        const tweetTimestamp = processedTweet.created_at
+          ? new Date(processedTweet.created_at).getTime() / 1000
           : Math.floor(Date.now() / 1000);
 
         if (tweetTimestamp <= lastSearchTimestamp) continue;
-        
+
         if (
-          pendingReply.some((t) => t.id === tweet.id) ||
-          pendingAddressRequest.some((t) => t.id === tweet.id) ||
-          pendingAddressConfirmation.some((t) => t.id === tweet.id) ||
-          pendingDeposits.some((t) => t.id === tweet.id) ||
-          pendingSettlement.some((t) => t.id === tweet.id)
+          pendingReply.some((t) => t.id === processedTweet.id) ||
+          pendingAddressRequest.some((t) => t.id === processedTweet.id) ||
+          pendingAddressConfirmation.some((t) => t.id === processedTweet.id) ||
+          pendingDeposits.some((t) => t.id === processedTweet.id) ||
+          pendingSettlement.some((t) => t.id === processedTweet.id)
         ) {
           continue;
         }
@@ -676,11 +700,31 @@ const searchTwitter = async () => {
           latestTimestamp = tweetTimestamp;
         }
 
-        tweet.replyAttempt = 0;
+        // If username is missing, try to extract it
+        if (
+          processedTweet.author_username === "unknown_user" &&
+          tweet.Metadata.user_id
+        ) {
+          // Use user_id as fallback if available
+          processedTweet.author_username = "user_" + tweet.Metadata.user_id;
+
+          // Try to extract username from tweet content if possible
+          const usernameMention = processedTweet.text.match(/@(\w+)/);
+          if (usernameMention && usernameMention.length > 1) {
+            // First mention might be the bot itself, so check
+            if (
+              usernameMention[1].toLowerCase() !== SMOL_BET_BOT.toLowerCase()
+            ) {
+              processedTweet.author_username = usernameMention[1];
+            }
+          }
+        }
+
+        processedTweet.replyAttempt = 0;
         if (!SEARCH_ONLY) {
-          pendingReply.push(tweet);
+          pendingReply.push(processedTweet);
         } else {
-          console.log("[Search Only] Found valid bet tweet:", tweet);
+          console.log("[Search Only] Found valid bet tweet:", processedTweet);
         }
       }
 
@@ -695,37 +739,71 @@ const searchTwitter = async () => {
     );
 
     if (settlementTweets && settlementTweets.length > 0) {
-      console.log(`Found ${settlementTweets.length} potential settlement tweets`);
+      console.log(
+        `Found ${settlementTweets.length} potential settlement tweets`
+      );
 
       for (const tweet of settlementTweets) {
-        const tweetTimestamp = tweet.created_at 
-          ? new Date(tweet.created_at).getTime() / 1000 
+        // Extract fields from Masa API response format
+        const processedTweet = {
+          id: tweet.ExternalID,
+          text: tweet.Content,
+          author_username: tweet.Metadata.username || "unknown_user",
+          conversation_id: tweet.Metadata.conversation_id,
+          created_at: tweet.Metadata.created_at,
+        };
+
+        // Get timestamp from Masa's created_at field
+        const tweetTimestamp = processedTweet.created_at
+          ? new Date(processedTweet.created_at).getTime() / 1000
           : Math.floor(Date.now() / 1000);
 
         if (tweetTimestamp <= lastSearchTimestamp) continue;
 
+        // If username is missing, try to extract it
+        if (
+          processedTweet.author_username === "unknown_user" &&
+          tweet.Metadata.user_id
+        ) {
+          // Use user_id as fallback if available
+          processedTweet.author_username = "user_" + tweet.Metadata.user_id;
+
+          // Try to extract username from tweet content
+          const usernameMention = processedTweet.text.match(/@(\w+)/);
+          if (
+            usernameMention &&
+            usernameMention.length > 1 &&
+            usernameMention[1].toLowerCase() !== SMOL_BET_BOT.toLowerCase()
+          ) {
+            processedTweet.author_username = usernameMention[1];
+          }
+        }
+
         // Find matching active bets for this user
         const matchingBets = pendingSettlement.filter(
           (b) =>
-            b.creatorUsername === tweet.author_username ||
-            b.opponentUsername === tweet.author_username
+            b.creatorUsername === processedTweet.author_username ||
+            b.opponentUsername === processedTweet.author_username
         );
 
         if (matchingBets.length > 0) {
           const bet = matchingBets.sort((a, b) => b.timestamp - a.timestamp)[0];
           console.log("Matched settlement tweet to bet:", bet.id);
 
-          bet.settlementTweet = tweet;
+          bet.settlementTweet = processedTweet;
           bet.settlementAttempt = 0;
 
           pendingSettlement.splice(pendingSettlement.indexOf(bet), 1);
           pendingSettlement.unshift(bet);
         } else {
-          console.log("No matching active bet for settlement tweet:", tweet.id);
+          console.log(
+            "No matching active bet for settlement tweet:",
+            processedTweet.id
+          );
           if (!SEARCH_ONLY) {
             await crosspostReply(
-              `Sorry @${tweet.author_username}, I couldn't find an active bet for you to settle. Make sure the bet is active first.`,
-              tweet,
+              `Sorry @${processedTweet.author_username}, I couldn't find an active bet for you to settle. Make sure the bet is active first.`,
+              processedTweet,
               FAKE_REPLY
             );
           }
