@@ -7,11 +7,12 @@ import { parsePostToBet, resolveBetWithAI } from "./lib/intent-parser";
 
 // Bot configuration
 const SMOL_BET_BOT = "funnyorfud";
-const BANKR_BOT = process.env.BANKRBOT_ID || "bankrbot";
+const BANKR_BOT = process.env.BANKRBOT || "bankrbot";
+const BANKR_BOT_ID = process.env.BANKRBOT_ID || "1871167275723575296";
 
 // Configuration constants
-const REPLY_PROCESSING_DELAY = 15000;
-const DEPOSIT_PROCESSING_DELAY = 5000;
+const REPLY_PROCESSING_DELAY = 30000;
+const DEPOSIT_PROCESSING_DELAY = 30000;
 const SETTLEMENT_PROCESSING_DELAY = 30000;
 const REFUND_PROCESSING_DELAY = 60000;
 const MAX_DEPOSIT_ATTEMPTS = 12 * 60; // 12 per minute * 60 mins
@@ -68,14 +69,14 @@ const getTransactionsForAddress = async (address, action = "txlist") => {
 const createBetInContract = async (bet) => {
   try {
     console.log("Creating bet...");
-    const createResult = await evm.createBetTx(
-      bet.description,
-      bet.creatorAddress,
-      bet.opponentAddress,
-      bet.depositAddress,
-      bet.stake * 2n,
-      bet.betPath
-    );
+    const createResult = await evm.createBetTx({
+      description: bet.description,
+      creator: bet.creatorAddress,
+      opponent: bet.opponentAddress,
+      resolver: bet.depositAddress,
+      stake: bet.stake * 2n,
+      path: bet.betPath,
+    });
 
     if (!createResult.success) {
       return console.log({
@@ -113,12 +114,12 @@ const createBetInContract = async (bet) => {
  */
 const resolveBetInContract = async (bet, winner) => {
   try {
-    const resolveResult = await evm.resolveBetTx(
-      bet.betId,
-      winner,
-      bet.depositAddress,
-      bet.betPath
-    );
+    const resolveResult = await evm.resolveBetTx({
+      betId: bet.betId,
+      winner: winner,
+      resolverAddress: bet.depositAddress,
+      path: bet.betPath,
+    });
 
     if (!resolveResult.success) {
       return console.log({
@@ -219,6 +220,13 @@ const processRefunds = async () => {
 const processSettlements = async () => {
   const bet = pendingSettlement.shift();
   if (!bet) {
+    await sleep(SETTLEMENT_PROCESSING_DELAY);
+    processSettlements();
+    return;
+  }
+
+  if (!bet.settlementTweet) {
+    pendingSettlement.push(bet); // Put it back at the end of the queue
     await sleep(SETTLEMENT_PROCESSING_DELAY);
     processSettlements();
     return;
@@ -351,7 +359,7 @@ const processDeposits = async () => {
 
       // Reply with bet confirmation
       await crosspostReply(
-        `Bet created! 🎲\n\nBet between @${bet.creatorUsername} and @${
+        `Bet created! 🎲\n\nBet between you and @${
           bet.opponentUsername
         } is now active!\n\nTotal stake: ${evm.formatBalance(
           bet.stake * 2n
@@ -418,7 +426,7 @@ const processAddressConfirmation = async () => {
 
     // Reply with deposit instructions
     const response = await crosspostReply(
-      `Bet confirmed! 🎲\n\n@${bet.creatorUsername} and @${bet.opponentUsername}, please send a total of ${totalStake} ETH (${formattedStake} ETH each) to: ${depositAddress}\n\nDeposits must be completed within 10 minutes. The bet will be activated once the full amount is received!`,
+      `Address confirmed! 🎲\n\n this account and @${bet.opponentUsername}, please send a total of ${totalStake} ETH (${formattedStake} ETH each) to: ${depositAddress}\n\nDeposits must be completed within 10 minutes. The bet will be activated once the full amount is received!`,
       { id: bet.id },
       FAKE_REPLY
     );
@@ -468,15 +476,17 @@ const processAddressRequest = async () => {
   try {
     // Search for replies from bankrbot with addresses
     const bankrbotReplies = await searchTweetsWithMasa(
-      `from:${BANKR_BOT} conversation_id:${bet.conversationId}`,
+      `from:${BANKR_BOT} "${bet.opponentUsername}"`,
       20
     );
 
     if (bankrbotReplies && bankrbotReplies.length > 0) {
       // Look for bankrbot reply with addresses
       for (const reply of bankrbotReplies) {
-        if (reply.author_username.toLowerCase() === BANKR_BOT.toLowerCase()) {
-          const tweetText = reply.text.toLowerCase();
+        if (
+          reply.Metadata.author.toLowerCase() === BANKR_BOT_ID.toLowerCase()
+        ) {
+          const tweetText = reply.Content.toLowerCase();
 
           // Extract addresses from reply
           const addressPattern = /0x[a-fA-F0-9]{40}/g;
@@ -564,17 +574,10 @@ const processReplies = async () => {
     }
 
     let betParsedJson = JSON.parse(betInfo);
-    console.log(betParsedJson);
-    
+
     const opponentUsername = betParsedJson.opponent.substring(1);
     const stakeAmount = betParsedJson.amount.split(" ")[0];
     const description = betParsedJson.bet_terms;
-
-    console.log("Parsed components:", {
-      opponentUsername,
-      stakeAmount,
-      description,
-    });
 
     // Convert stake to wei
     const stake = BigInt(Math.floor(parseFloat(stakeAmount) * 1e18));
@@ -592,7 +595,7 @@ const processReplies = async () => {
 
     // Ask @bankrbot for addresses
     const response = await crosspostReply(
-      `@${BANKR_BOT} What are the addresses for @${tweet.author_username} and @${opponentUsername}?`,
+      `@${BANKR_BOT} What are the evm addresses for this account and @${opponentUsername}?`,
       tweet,
       FAKE_REPLY
     );
@@ -707,17 +710,7 @@ const searchTwitter = async () => {
         ) {
           // Use user_id as fallback if available
           processedTweet.author_username = "user_" + tweet.Metadata.user_id;
-
-          // Try to extract username from tweet content if possible
-          const usernameMention = processedTweet.text.match(/@(\w+)/);
-          if (usernameMention && usernameMention.length > 1) {
-            // First mention might be the bot itself, so check
-            if (
-              usernameMention[1].toLowerCase() !== SMOL_BET_BOT.toLowerCase()
-            ) {
-              processedTweet.author_username = usernameMention[1];
-            }
-          }
+          processedTweet.author_id = tweet.Metadata.user_id;
         }
 
         processedTweet.replyAttempt = 0;
@@ -767,16 +760,7 @@ const searchTwitter = async () => {
         ) {
           // Use user_id as fallback if available
           processedTweet.author_username = "user_" + tweet.Metadata.user_id;
-
-          // Try to extract username from tweet content
-          const usernameMention = processedTweet.text.match(/@(\w+)/);
-          if (
-            usernameMention &&
-            usernameMention.length > 1 &&
-            usernameMention[1].toLowerCase() !== SMOL_BET_BOT.toLowerCase()
-          ) {
-            processedTweet.author_username = usernameMention[1];
-          }
+          processedTweet.author_id = tweet.Metadata.user_id;
         }
 
         // Find matching active bets for this user

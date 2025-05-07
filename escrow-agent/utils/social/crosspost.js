@@ -137,6 +137,8 @@ export const crosspostReply = async (
     );
     const res = await client.post.replyToPost(replyRequest);
     console.log("Crosspost reply response:", res);
+    console.log("Crossport reply result", res.data.results);
+    
 
     return { data: { id: res?.id } };
   } catch (e) {

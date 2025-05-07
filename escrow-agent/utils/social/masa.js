@@ -3,7 +3,7 @@ import { sleep } from "../utils";
 const MASA_BASE_URL = "https://data.dev.masalabs.ai/api/v1";
 const MASA_API_KEY = process.env.MASA_API_KEY;
 
-const POLLING_INTERVAL = 10000; // 10 seconds for job status polling
+const POLLING_INTERVAL = 30000; // 10 seconds for job status polling
 const MAX_POLLS = 30; // Max 30 polls (5 minutes)
 
 if (!MASA_API_KEY) {
@@ -22,11 +22,18 @@ export const submitMasaSearchJob = async (query, max_results = 100) => {
   if (!MASA_API_KEY) throw new Error("Masa API key not configured.");
   const url = `${MASA_BASE_URL}/search/live/twitter`;
   const payload = {
-    query,
-    max_results,
+    type: "twitter-scraper",
+    arguments: {
+      type: "searchbyquery",
+      query: query,
+      max_results: max_results
+    }
   };
   console.log(
     `Submitting Masa search job with query: "${query}", max_results: ${max_results}`
+  );
+  console.log(
+    JSON.stringify(payload)
   );
   try {
     const response = await fetch(url, {

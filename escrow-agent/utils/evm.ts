@@ -69,6 +69,8 @@ export const evm = {
       // Get provider and prepare transaction
       const provider = getProvider();
 
+      console.log("Creating bet with creator", creator);
+      
       // Get the network's current values
       const [nonce, feeData] = await Promise.all([
         provider.getTransactionCount(creator),
