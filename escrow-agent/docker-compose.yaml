@@ -13,9 +13,14 @@ services:
             NEXT_PUBLIC_contractId: ${NEXT_PUBLIC_contractId}
             MPC_PUBLIC_KEY_TESTNET: ${MPC_PUBLIC_KEY_TESTNET}
             MPC_PUBLIC_KEY_MAINNET: ${MPC_PUBLIC_KEY_MAINNET}
+            CROSSPOST_KEYPAIR : ${CROSSPOST_KEYPAIR}
+            CROSSPOST_SIGNER_ID: ${CROSSPOST_SIGNER_ID}
+            BANKRBOT: ${BANKRBOT}
+            BANKRBOT_ID: ${BANKRBOT_ID}
+            MASA_API_KEY: ${MASA_API_KEY}
             RESTART_PASS: ${RESTART_PASS}
         platform: linux/amd64 # Explicitly set for TDX
-        image: prakharojha/escrow-agent:latest@sha256:186ce93a221ae77cd9ef294eb0eeed54ef248ae7e35da67536a91f91ff21807f
+        image: prakharojha/escrow-agent:latest@sha256:0cecbd3135be0ae01142fefe16f2176c8c54ba29440fa9dfe69ff6bcb8777592
         container_name: web
         ports:
             - '3000:3000'
