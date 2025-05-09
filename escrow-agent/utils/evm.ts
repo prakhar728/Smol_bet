@@ -25,6 +25,48 @@ const getProvider = () => {
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+/**
+ * Interface for transfer parameters
+ */
+interface TransferFromAndToParams {
+  fromAddresses: string[];
+  toAddress: string;
+  paths: string[];
+  amounts: bigint[];
+  gasLimit?: bigint;
+}
+
+/**
+ * Interface for individual transfer result
+ */
+interface TransferResult {
+  success: boolean;
+  from: string;
+  hash?: string;
+  explorerLink?: string;
+  amount?: bigint;
+  error?: string;
+}
+
+/**
+ * Interface for overall transfer operation result
+ */
+interface TransferOperationResult {
+  success: boolean;
+  transfers: TransferResult[];
+}
+
+/**
+ * Interface for deposit transfer parameters
+ */
+interface TransferDepositsToResolverParams {
+  creatorDepositAddress: string;
+  opponentDepositAddress: string;
+  resolverAddress: string;
+  creatorBetPath: string;
+  opponentBetPath: string;
+}
+
 export const evm = {
   name: "Base",
   chainId: networkId === "testnet" ? 84532 : 8453,
@@ -189,6 +231,157 @@ export const evm = {
   getGasPrice: async () => getProvider().getFeeData(),
   getBalance: ({ address }) => getProvider().getBalance(address),
   formatBalance: (balance) => ethers.formatEther(balance),
+
+  transferFromAndTo: async ({
+    fromAddresses,
+    toAddress,
+    paths,
+    amounts,
+    gasLimit = 21000n,
+  }: TransferFromAndToParams): Promise<TransferOperationResult> => {
+    if (!fromAddresses || !Array.isArray(fromAddresses) || !toAddress) {
+      console.error("Must provide fromAddresses array and toAddress");
+      return { success: false, transfers: [] };
+    }
+
+    if (
+      !paths ||
+      !Array.isArray(paths) ||
+      paths.length !== fromAddresses.length
+    ) {
+      console.error("Must provide a path for each fromAddress");
+      return { success: false, transfers: [] };
+    }
+
+    if (
+      !amounts ||
+      !Array.isArray(amounts) ||
+      amounts.length !== fromAddresses.length
+    ) {
+      console.error("Must provide an amount for each fromAddress");
+      return { success: false, transfers: [] };
+    }
+
+    const provider = getProvider();
+    const feeData = await provider.getFeeData();
+    const results: TransferResult[] = [];
+
+    // Process each transfer sequentially
+    for (let i = 0; i < fromAddresses.length; i++) {
+      const from = fromAddresses[i];
+      const path = paths[i];
+      const amount = amounts[i];
+
+      try {
+        // Check balance
+        const balance = await provider.getBalance(from);
+        console.log(`Balance of ${from}: ${ethers.formatEther(balance)} ETH`);
+
+        // Calculate gas costs
+        const gasFee =
+          gasLimit * (feeData.maxFeePerGas || 0n) +
+          (feeData.maxPriorityFeePerGas || 0n);
+
+        // Calculate amount to send (balance - gas fee with a small buffer for fluctuations)
+        const safetyBuffer = 5000000000000n; // 0.000005 ETH buffer
+
+        // If amount is 0n, send the entire balance minus gas and buffer
+        const valueToSend =
+          amount === 0n
+            ? balance > gasFee + safetyBuffer
+              ? balance - gasFee - safetyBuffer
+              : 0n
+            : amount;
+
+        if (valueToSend <= 0n) {
+          console.log(
+            `Insufficient balance in ${from} to cover gas costs and transfer`
+          );
+          results.push({
+            success: false,
+            from,
+            error: "Insufficient balance",
+          });
+          continue;
+        }
+
+        // Get nonce for the sending address
+        const nonce = await provider.getTransactionCount(from);
+
+        // Create transaction object
+        const baseTx = {
+          to: toAddress,
+          nonce,
+          value: valueToSend,
+          gasLimit,
+          type: 2,
+          maxPriorityFeePerGas: feeData.maxPriorityFeePerGas || 0n,
+          maxFeePerGas: feeData.maxFeePerGas || 0n,
+          chainId: evm.chainId,
+          data: "0x", // Empty data for a simple ETH transfer
+        };
+
+        console.log(
+          `Transferring ${ethers.formatEther(
+            valueToSend
+          )} ETH from ${from} to ${toAddress}`
+        );
+
+        // Execute the transaction
+        const result = await evm.completeEthereumTx({ baseTx, path });
+        results.push({
+          success: !!result.success,
+          from,
+          hash: result.hash,
+          explorerLink: result.explorerLink,
+          amount: valueToSend,
+          error: result.error ? String(result.error) : undefined,
+        });
+
+        // Add a small delay between transactions
+        await sleep(2000);
+      } catch (error) {
+        console.error(`Error transferring from ${from}:`, error);
+        results.push({
+          success: false,
+          from,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+
+    return {
+      success: results.every((r) => r.success),
+      transfers: results,
+    };
+  },
+
+  transferDepositsToResolver: async ({
+    creatorDepositAddress,
+    opponentDepositAddress,
+    resolverAddress,
+    creatorBetPath,
+    opponentBetPath,
+  }: TransferDepositsToResolverParams): Promise<TransferOperationResult> => {
+    if (!creatorDepositAddress || !opponentDepositAddress || !resolverAddress) {
+      console.error("Missing required addresses");
+      return { success: false, transfers: [] };
+    }
+
+    if (!creatorBetPath || !opponentBetPath) {
+      console.error("Missing required paths");
+      return { success: false, transfers: [] };
+    }
+
+    // Use 0n to indicate "send entire balance minus gas"
+    return await evm.transferFromAndTo({
+      fromAddresses: [creatorDepositAddress, opponentDepositAddress],
+      toAddress: resolverAddress,
+      paths: [creatorBetPath, opponentBetPath],
+      amounts: [0n, 0n],
+      gasLimit: 30000n, // Slightly higher gas limit for safety
+    });
+  },
 
   send: async ({
     path,

@@ -135,12 +135,9 @@ export const crosspostReply = async (
       "replyToPost with request:",
       JSON.stringify(replyRequest, null, 2)
     );
-    const res = await client.post.replyToPost(replyRequest);
-    console.log("Crosspost reply response:", res);
-    console.log("Crossport reply result", res.data.results);
-    
+    const res = await client.post.replyToPost(replyRequest);    
 
-    return { data: { id: res?.id } };
+    return { data: { id: res?.id, results: res?.data?.results } };
   } catch (e) {
     console.log("Error crossposting reply...", e);
     throw new Error("Error crossposting reply.");
