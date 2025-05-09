@@ -9,10 +9,11 @@ import { parsePostToBet, resolveBetWithAI } from "./lib/intent-parser";
 const SMOL_BET_BOT = "funnyorfud";
 const BANKR_BOT = process.env.BANKRBOT || "bankrbot";
 const BANKR_BOT_ID = process.env.BANKRBOT_ID || "1871167275723575296";
+const ESCROW_BOT_ID = "1869279598522896384";
 
 // Configuration constants
 const REPLY_PROCESSING_DELAY = 30000;
-const DEPOSIT_PROCESSING_DELAY = 30000;
+const DEPOSIT_PROCESSING_DELAY = 60000;
 const SETTLEMENT_PROCESSING_DELAY = 30000;
 const REFUND_PROCESSING_DELAY = 60000;
 const MAX_DEPOSIT_ATTEMPTS = 12 * 60; // 12 per minute * 60 mins
@@ -27,9 +28,14 @@ const pendingDeposits = []; // Waiting for both parties to deposit stakes
 const pendingSettlement = []; // Active bets awaiting settlement
 const pendingRefund = []; // Failed bets requiring refunds
 const completedBets = []; // Successfully settled bets (for record-keeping)
+const acknowledgedPosts = new Set(); // Track if the post is already picked up by any queue.
 
 // Keep track of the last processed tweet
 let lastSearchTimestamp =
+  parseInt(process.env.LAST_SEARCH_TIMESTAMP) ||
+  Math.floor(Date.now() / 1000) - 86400; // Default to 24 hours ago
+
+let lastSettleBetSeachTimestamp =
   parseInt(process.env.LAST_SEARCH_TIMESTAMP) ||
   Math.floor(Date.now() / 1000) - 86400; // Default to 24 hours ago
 
@@ -73,7 +79,7 @@ const createBetInContract = async (bet) => {
       description: bet.description,
       creator: bet.creatorAddress,
       opponent: bet.opponentAddress,
-      resolver: bet.depositAddress,
+      resolver: bet.resolverAddress,
       stake: bet.stake * 2n,
       path: bet.betPath,
     });
@@ -117,7 +123,7 @@ const resolveBetInContract = async (bet, winner) => {
     const resolveResult = await evm.resolveBetTx({
       betId: bet.betId,
       winner: winner,
-      resolverAddress: bet.depositAddress,
+      resolverAddress: bet.resolverAddress,
       path: bet.betPath,
     });
 
@@ -144,74 +150,6 @@ const resolveBetInContract = async (bet, winner) => {
     console.log("Error resolving bet in contract:", e);
     return { success: false, error: e.message };
   }
-};
-
-/**
- * Process pending refunds
- */
-const processRefunds = async () => {
-  const bet = pendingRefund.shift();
-  if (!bet) {
-    await sleep(REFUND_PROCESSING_DELAY);
-    processRefunds();
-    return;
-  }
-  console.log("Processing refund for bet:", bet.id);
-
-  // Handle refund if there's a deposit
-  const address = bet.depositAddress;
-  if (!address) {
-    // No deposit address, nothing to refund
-    await sleep(REFUND_PROCESSING_DELAY);
-    processRefunds();
-    return;
-  }
-
-  let tx = await getTransactionsForAddress(address);
-  let internal = false;
-
-  // Check internal transactions if no regular transactions found
-  if (!tx) {
-    tx = await getTransactionsForAddress(address, "txlistinternal");
-    internal = true;
-  }
-
-  if (tx) {
-    try {
-      const balance = await evm.getBalance({
-        address: address,
-      });
-
-      if (balance > 0n) {
-        const feeData = await evm.getGasPrice();
-        const gasPrice =
-          BigInt(feeData.maxFeePerGas) + BigInt(feeData.maxPriorityFeePerGas);
-        const gasLimit = internal ? 500000n : 21000n;
-        const gasFee = gasPrice * gasLimit;
-
-        // Ensure we don't overdraw
-        const adjust = 5000000000000n;
-        const amount = evm.formatBalance(balance - gasFee - adjust);
-
-        // Send refund back to original sender
-        await evm.send({
-          path: bet.betPath,
-          from: address,
-          to: tx.from,
-          amount,
-          gasLimit,
-        });
-
-        console.log(`Refunded ${amount} to ${tx.from}`);
-      }
-    } catch (e) {
-      console.log(`Error processing refund:`, e);
-    }
-  }
-
-  // Move on to next refund
-  await sleep(REFUND_PROCESSING_DELAY);
-  processRefunds();
 };
 
 /**
@@ -327,20 +265,33 @@ const processDeposits = async () => {
     return;
   }
 
-  // Check for total deposit amount
+  // Check for deposits
   let totalDeposited = bet.totalDeposited || false;
 
   if (!totalDeposited) {
     try {
-      const balance = await evm.getBalance({
-        address: bet.depositAddress,
+      const balance1 = await evm.getBalance({
+        address: bet.authorDepositAddress,
       });
-      console.log("Deposit balance:", evm.formatBalance(balance));
+      console.log("Author deposit balance:", evm.formatBalance(balance1));
 
-      // Check if the full amount (both stakes) has been deposited
-      if (balance >= bet.stake * 2n) {
+      const balance2 = await evm.getBalance({
+        address: bet.opponentDepositAddress,
+      });
+      console.log("Opponent deposit balance:", evm.formatBalance(balance2));
+
+      // Check if both parties have deposited their stakes
+      if (balance1 >= bet.stake && balance2 >= bet.stake) {
+        let tx = await getTransactionsForAddress(bet.authorDepositAddress);
+        const creatorAddress = tx.from;
+
+        tx = await getTransactionsForAddress(bet.opponentDepositAddress);
+        const opponentAddress = tx.from;
+
         totalDeposited = true;
         bet.totalDeposited = true;
+        bet.creatorAddress = creatorAddress;
+        bet.opponentAddress = opponentAddress;
         console.log("Total deposit confirmed");
       }
     } catch (e) {
@@ -350,8 +301,45 @@ const processDeposits = async () => {
 
   // If the full amount has been deposited, create the bet in contract
   if (totalDeposited) {
-    console.log("Full amount deposited, creating bet in contract");
+    console.log("Full amount deposited, preparing to create bet in contract");
 
+    // Generate a resolver address and path
+    const betPath = `${bet.creatorUsername}-${bet.opponentUsername}-${bet.id}`;
+    const { address: resolverAddress } = await generateAddress({
+      publicKey:
+        networkId === "testnet"
+          ? process.env.MPC_PUBLIC_KEY_TESTNET
+          : process.env.MPC_PUBLIC_KEY_MAINNET,
+      accountId: process.env.NEXT_PUBLIC_contractId,
+      path: betPath,
+      chain: "evm",
+    });
+
+    bet.resolverAddress = resolverAddress;
+    bet.betPath = betPath;
+
+    // First, transfer funds from both deposit addresses to the resolver address
+    console.log("Transferring funds to resolver address:", resolverAddress);
+    const transferResult = await evm.transferDepositsToResolver({
+      creatorDepositAddress: bet.authorDepositAddress,
+      opponentDepositAddress: bet.opponentDepositAddress,
+      resolverAddress: bet.resolverAddress,
+      creatorBetPath: bet.authorBetPath,
+      opponentBetPath: bet.opponentBetPath,
+    });
+
+    if (!transferResult.success) {
+      console.error("Failed to transfer funds to resolver:", transferResult);
+      bet.depositAttempt++;
+      pendingDeposits.push(bet);
+      await sleep(DEPOSIT_PROCESSING_DELAY);
+      processDeposits();
+      return;
+    }
+
+    console.log("Successfully transferred funds to resolver address");
+
+    // Now create the bet in the contract using funds from the resolver address
     const betResult = await createBetInContract(bet);
 
     if (betResult.success) {
@@ -359,14 +347,14 @@ const processDeposits = async () => {
 
       // Reply with bet confirmation
       await crosspostReply(
-        `Bet created! 🎲\n\nBet between you and @${
+        `Bet created! 🎲\n\nBet between @${bet.creatorUsername} and @${
           bet.opponentUsername
         } is now active!\n\nTotal stake: ${evm.formatBalance(
           bet.stake * 2n
         )} ETH\n\nDescription: "${
           bet.description
         }"\n\nEither party can trigger settlement by tagging @${SMOL_BET_BOT} with "settle bet"`,
-        { id: bet.id },
+        { id: bet.mostRecentTweetId },
         FAKE_REPLY
       );
 
@@ -387,159 +375,6 @@ const processDeposits = async () => {
 
   await sleep(DEPOSIT_PROCESSING_DELAY);
   processDeposits();
-};
-
-/**
- * Process address confirmation for users
- */
-const processAddressConfirmation = async () => {
-  const bet = pendingAddressConfirmation.shift();
-  if (!bet) {
-    await sleep(REPLY_PROCESSING_DELAY);
-    processAddressConfirmation();
-    return;
-  }
-
-  console.log("Processing address confirmation for bet:", bet.id);
-
-  // Generate a single unique deposit address for the bet
-  try {
-    // Generate address using combined path of both usernames
-    const betPath = `${bet.creatorUsername}-${bet.opponentUsername}-${bet.id}`;
-    const { address: depositAddress } = await generateAddress({
-      publicKey:
-        networkId === "testnet"
-          ? process.env.MPC_PUBLIC_KEY_TESTNET
-          : process.env.MPC_PUBLIC_KEY_MAINNET,
-      accountId: process.env.NEXT_PUBLIC_contractId,
-      path: betPath,
-      chain: "evm",
-    });
-
-    // Store address and path
-    bet.betPath = betPath;
-    bet.depositAddress = depositAddress;
-
-    // Format stake amount
-    const formattedStake = evm.formatBalance(bet.stake);
-    const totalStake = evm.formatBalance(bet.stake * 2n);
-
-    // Reply with deposit instructions
-    const response = await crosspostReply(
-      `Address confirmed! 🎲\n\n this account and @${bet.opponentUsername}, please send a total of ${totalStake} ETH (${formattedStake} ETH each) to: ${depositAddress}\n\nDeposits must be completed within 10 minutes. The bet will be activated once the full amount is received!`,
-      { id: bet.id },
-      FAKE_REPLY
-    );
-
-    if (response?.data) {
-      // Initialize deposit monitoring
-      bet.depositAttempt = 0;
-      bet.totalDeposited = false;
-
-      // Move to deposit monitoring
-      pendingDeposits.push(bet);
-    } else {
-      // Retry if reply failed
-      console.log("Failed to send deposit instructions, retrying");
-      bet.confirmationAttempt = (bet.confirmationAttempt || 0) + 1;
-
-      if (bet.confirmationAttempt < 3) {
-        pendingAddressConfirmation.push(bet);
-      }
-    }
-  } catch (e) {
-    console.log("Error generating address:", e);
-    bet.confirmationAttempt = (bet.confirmationAttempt || 0) + 1;
-
-    if (bet.confirmationAttempt < 3) {
-      pendingAddressConfirmation.push(bet);
-    }
-  }
-
-  await sleep(REPLY_PROCESSING_DELAY);
-  processAddressConfirmation();
-};
-
-/**
- * Process address request from bankrbot
- */
-const processAddressRequest = async () => {
-  const bet = pendingAddressRequest.shift();
-  if (!bet) {
-    await sleep(REPLY_PROCESSING_DELAY);
-    processAddressRequest();
-    return;
-  }
-
-  console.log("Processing address request for bet:", bet.id);
-
-  try {
-    // Search for replies from bankrbot with addresses
-    const bankrbotReplies = await searchTweetsWithMasa(
-      `from:${BANKR_BOT} "${bet.opponentUsername}"`,
-      20
-    );
-
-    if (bankrbotReplies && bankrbotReplies.length > 0) {
-      // Look for bankrbot reply with addresses
-      for (const reply of bankrbotReplies) {
-        if (
-          reply.Metadata.author.toLowerCase() === BANKR_BOT_ID.toLowerCase()
-        ) {
-          const tweetText = reply.Content.toLowerCase();
-
-          // Extract addresses from reply
-          const addressPattern = /0x[a-fA-F0-9]{40}/g;
-          const addresses = tweetText.match(addressPattern);
-
-          // Check if we found two addresses (creator and opponent)
-          if (addresses && addresses.length >= 2) {
-            bet.creatorAddress = addresses[0];
-            bet.opponentAddress = addresses[1];
-
-            console.log(
-              "Found addresses:",
-              bet.creatorAddress,
-              bet.opponentAddress
-            );
-
-            // Move to address confirmation
-            pendingAddressConfirmation.push(bet);
-            await sleep(REPLY_PROCESSING_DELAY);
-            processAddressRequest();
-            return;
-          }
-        }
-      }
-    }
-
-    // If we reach here, we didn't find a reply with addresses
-    bet.addressRequestAttempt = (bet.addressRequestAttempt || 0) + 1;
-
-    if (bet.addressRequestAttempt < MAX_ADDRESS_REQUESTS) {
-      console.log("No address reply found, trying again later");
-      pendingAddressRequest.push(bet);
-    } else {
-      console.log("Max address request attempts reached, giving up");
-
-      // Reply to user that we couldn't get addresses
-      await crosspostReply(
-        `Sorry, I couldn't get the addresses for @${bet.creatorUsername} and @${bet.opponentUsername}. Please try again later.`,
-        { id: bet.id },
-        FAKE_REPLY
-      );
-    }
-  } catch (e) {
-    console.log("Error processing address request:", e);
-    bet.addressRequestAttempt = (bet.addressRequestAttempt || 0) + 1;
-
-    if (bet.addressRequestAttempt < MAX_ADDRESS_REQUESTS) {
-      pendingAddressRequest.push(bet);
-    }
-  }
-
-  await sleep(REPLY_PROCESSING_DELAY);
-  processAddressRequest();
 };
 
 /**
@@ -593,9 +428,33 @@ const processReplies = async () => {
       return;
     }
 
-    // Ask @bankrbot for addresses
+    const formattedStake = evm.formatBalance(stake);
+
+    const authorBetPath = `${tweet.author_username}-${tweet.id}`;
+    const { address: authorDepositAddress } = await generateAddress({
+      publicKey:
+        networkId === "testnet"
+          ? process.env.MPC_PUBLIC_KEY_TESTNET
+          : process.env.MPC_PUBLIC_KEY_MAINNET,
+      accountId: process.env.NEXT_PUBLIC_contractId,
+      path: authorBetPath,
+      chain: "evm",
+    });
+
+    const opponentBetPath = `${opponentUsername}-${tweet.id}`;
+    const { address: opponentDepositAddress } = await generateAddress({
+      publicKey:
+        networkId === "testnet"
+          ? process.env.MPC_PUBLIC_KEY_TESTNET
+          : process.env.MPC_PUBLIC_KEY_MAINNET,
+      accountId: process.env.NEXT_PUBLIC_contractId,
+      path: opponentBetPath,
+      chain: "evm",
+    });
+
+    // Ask for deposit
     const response = await crosspostReply(
-      `@${BANKR_BOT} What are the evm addresses for this account and @${opponentUsername}?`,
+      `I got you! \n @${tweet.author_username} deposit ${formattedStake} ETH to ${authorDepositAddress} \n and @${opponentUsername} deposit ${formattedStake} ETH to ${opponentDepositAddress}`,
       tweet,
       FAKE_REPLY
     );
@@ -613,8 +472,13 @@ const processReplies = async () => {
         opponentUsername: opponentUsername,
         stake: stake,
         description: description,
-        addressRequestTweetId: response.data.id,
+        mostRecentTweetId: response.data.results[0]["details"]["id"],
+        authorBetPath: authorBetPath,
+        authorDepositAddress: authorDepositAddress,
+        opponentBetPath: opponentBetPath,
+        opponentDepositAddress: opponentDepositAddress,
         addressRequestAttempt: 0,
+        depositAttempt: 0,
         timestamp: tweet.created_at
           ? new Date(tweet.created_at).getTime() / 1000
           : Math.floor(Date.now() / 1000),
@@ -623,7 +487,7 @@ const processReplies = async () => {
       console.log("Created bet object:", bet);
 
       // Move to address request queue
-      pendingAddressRequest.push(bet);
+      pendingDeposits.push(bet);
     } else {
       // Retry reply
       console.log("Failed to get response from crosspostReply, retrying");
@@ -645,11 +509,8 @@ const processReplies = async () => {
  */
 const startProcessingQueues = () => {
   processReplies();
-  processAddressRequest();
-  processAddressConfirmation();
   processDeposits();
   processSettlements();
-  // processRefunds();  // NO REFUNDS FOR TESTNET
 };
 
 /**
@@ -664,7 +525,19 @@ const searchTwitter = async () => {
 
   try {
     // Search for bet tweets
-    const betTweets = await searchTweetsWithMasa(`@${SMOL_BET_BOT} "bet"`, 100);
+    let betTweets = [];
+    let retry = false;
+
+    do {
+      try {
+        betTweets = await searchTweetsWithMasa(`@${SMOL_BET_BOT} "bet"`, 100);
+        retry = false;
+      } catch (error) {
+        console.log("Error fetching betTweets trying again in 30 seconds");
+        await sleep(30000);
+        retry = true;
+      }
+    } while (retry);
 
     console.log("Log betTweets", betTweets);
 
@@ -689,28 +562,12 @@ const searchTwitter = async () => {
 
         if (tweetTimestamp <= lastSearchTimestamp) continue;
 
-        if (
-          pendingReply.some((t) => t.id === processedTweet.id) ||
-          pendingAddressRequest.some((t) => t.id === processedTweet.id) ||
-          pendingAddressConfirmation.some((t) => t.id === processedTweet.id) ||
-          pendingDeposits.some((t) => t.id === processedTweet.id) ||
-          pendingSettlement.some((t) => t.id === processedTweet.id)
-        ) {
-          continue;
-        }
+        if (acknowledgedPosts.has(processedTweet.id) || tweet.Metadata.user_id == ESCROW_BOT_ID) continue;
+
+        acknowledgedPosts.add(processedTweet.id);
 
         if (tweetTimestamp > latestTimestamp) {
           latestTimestamp = tweetTimestamp;
-        }
-
-        // If username is missing, try to extract it
-        if (
-          processedTweet.author_username === "unknown_user" &&
-          tweet.Metadata.user_id
-        ) {
-          // Use user_id as fallback if available
-          processedTweet.author_username = "user_" + tweet.Metadata.user_id;
-          processedTweet.author_id = tweet.Metadata.user_id;
         }
 
         processedTweet.replyAttempt = 0;
@@ -725,11 +582,26 @@ const searchTwitter = async () => {
       lastSearchTimestamp = latestTimestamp;
     }
 
-    // Search for settlement tweets
-    const settlementTweets = await searchTweetsWithMasa(
-      `@${SMOL_BET_BOT} "settle bet"`,
-      100
-    );
+    await sleep(60000);
+
+    let settlementTweets = [];
+    retry = false;
+    do {
+      try {
+        // Search for settlement tweets
+        settlementTweets = await searchTweetsWithMasa(
+          `@${SMOL_BET_BOT} "settle"`,
+          100
+        );
+        retry = false;
+      } catch (error) {
+        console.log(
+          "Error fetching settlement tweets trying again in 30 seconds"
+        );
+        await sleep(30000);
+        retry = true;
+      }
+    } while (retry);
 
     if (settlementTweets && settlementTweets.length > 0) {
       console.log(
@@ -751,16 +623,14 @@ const searchTwitter = async () => {
           ? new Date(processedTweet.created_at).getTime() / 1000
           : Math.floor(Date.now() / 1000);
 
-        if (tweetTimestamp <= lastSearchTimestamp) continue;
+        if (tweetTimestamp <= lastSettleBetSeachTimestamp) continue;
 
-        // If username is missing, try to extract it
-        if (
-          processedTweet.author_username === "unknown_user" &&
-          tweet.Metadata.user_id
-        ) {
-          // Use user_id as fallback if available
-          processedTweet.author_username = "user_" + tweet.Metadata.user_id;
-          processedTweet.author_id = tweet.Metadata.user_id;
+        if (acknowledgedPosts.has(processedTweet.id) || tweet.Metadata.user_id == ESCROW_BOT_ID) continue;
+
+        acknowledgedPosts.add(processedTweet.id);
+
+        if (tweetTimestamp > lastSettleBetSeachTimestamp) {
+          lastSettleBetSeachTimestamp = tweetTimestamp;
         }
 
         // Find matching active bets for this user

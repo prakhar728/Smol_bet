@@ -3,7 +3,7 @@ import { sleep } from "../utils";
 const MASA_BASE_URL = "https://data.dev.masalabs.ai/api/v1";
 const MASA_API_KEY = process.env.MASA_API_KEY;
 
-const POLLING_INTERVAL = 30000; // 10 seconds for job status polling
+const POLLING_INTERVAL = 60000; // 60 seconds for job status polling
 const MAX_POLLS = 30; // Max 30 polls (5 minutes)
 
 if (!MASA_API_KEY) {
