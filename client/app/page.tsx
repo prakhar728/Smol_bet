@@ -7,64 +7,13 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
+import Navbar from "@/components/navbar";
 
 export default function LandingPage() {
   return (
     <div className="flex min-h-screen flex-col bg-zinc-950 text-zinc-50">
-      <header className="sticky top-0 z-40 w-full border-b border-zinc-800 bg-zinc-950/95 backdrop-blur supports-[backdrop-filter]:bg-zinc-950/60">
-        <div className="container flex h-16 items-center space-x-4 sm:justify-between sm:space-x-0 mx-auto">
-          <div className="flex gap-6 md:gap-10">
-            <Link href="/" className="flex items-center space-x-2">
-              <img
-                src="/Logo-transparent.png"
-                alt="Smol Bets Logo"
-                className="h-12 w-12"
-              />
-              <span className="inline-block font-bold text-purple-400">
-                Smol Bets
-              </span>
-            </Link>
-            <nav className="hidden gap-6 md:flex">
-              <Link
-                href="#how-it-works"
-                className="flex items-center text-sm font-medium text-zinc-400 transition-colors hover:text-zinc-50"
-              >
-                How It Works
-              </Link>
-              <Link
-                href="#examples"
-                className="flex items-center text-sm font-medium text-zinc-400 transition-colors hover:text-zinc-50"
-              >
-                Examples
-              </Link>
-              <Link
-                href="#faq"
-                className="flex items-center text-sm font-medium text-zinc-400 transition-colors hover:text-zinc-50"
-              >
-                FAQ
-              </Link>
-            </nav>
-          </div>
-          <div className="flex flex-1 items-center justify-end space-x-4">
-            <nav className="flex items-center space-x-2">
-              {/* <Link href="/bets">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="border-zinc-700 text-zinc-800 hover:bg-zinc-800 hover:text-zinc-50"
-                >
-                  View Bets
-                </Button>
-              </Link>
-              <Link href="/bets">
-                <Button size="sm" className="bg-purple-600 hover:bg-purple-700">
-                  Launch App
-                </Button>
-              </Link> */}
-            </nav>
-          </div>
-        </div>
-      </header>
+      <Navbar />
+
       <main className="flex-1">
         <section className="space-y-6 pb-8 pt-6 md:pb-12 md:pt-10 lg:py-32">
           <div className="container flex max-w-[64rem] flex-col items-center gap-4 text-center mx-auto">

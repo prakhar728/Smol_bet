@@ -7,8 +7,6 @@ import { parsePostToBet, resolveBetWithAI } from "./lib/intent-parser";
 
 // Bot configuration
 const SMOL_BET_BOT = "funnyorfud";
-const BANKR_BOT = process.env.BANKRBOT || "bankrbot";
-const BANKR_BOT_ID = process.env.BANKRBOT_ID || "1871167275723575296";
 const ESCROW_BOT_ID = "1869279598522896384";
 
 // Configuration constants
