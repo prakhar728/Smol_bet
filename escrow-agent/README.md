@@ -61,8 +61,6 @@ TWITTER_API_KEY: app auth key
 TWITTER_API_SECRET: app auth secret
 TWITTER_CLIENT_KEY: for client auth, also referred to as client ID
 TWITTER_CLIENT_SECRET: for client auth
-TWITTER_ACCESS_TOKEN: after authenticating your X agent account with your app
-TWITTER_REFRESH_TOKEN: same as above
 TWITTER_LAST_TIMESTAMP: default 0
 NEXT_PUBLIC_contractId: your shade agent contract ID
 MPC_PUBLIC_KEY_TESTNET: https://docs.near.org/chain-abstraction/chain-signatures/implementation

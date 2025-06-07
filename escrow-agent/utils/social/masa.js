@@ -1,6 +1,6 @@
 import { sleep } from "../utils";
 
-const MASA_BASE_URL = "https://data.dev.masalabs.ai/api/v1";
+const MASA_BASE_URL = "https://data.masa.ai/api/v1";
 const MASA_API_KEY = process.env.MASA_API_KEY;
 
 const POLLING_INTERVAL = 60000; // 60 seconds for job status polling
@@ -26,17 +26,12 @@ export const submitMasaSearchJob = async (query, max_results = 100) => {
     arguments: {
       type: "searchbyquery",
       query: query,
-      max_results: max_results
-    }
+      max_results: max_results,
+    },
   };
-  console.log(
-    `Submitting Masa search job with query: "${query}", max_results: ${max_results}`
-  );
-  console.log(
-    JSON.stringify(payload)
-  );
+
   try {
-    const response = await fetch(url, {
+    const response = await fetch(url, { 
       method: "POST",
       headers: {
         Authorization: `Bearer ${MASA_API_KEY}`,
@@ -76,6 +71,8 @@ export const submitMasaSearchJob = async (query, max_results = 100) => {
 export const checkMasaJobStatus = async (uuid) => {
   if (!MASA_API_KEY) throw new Error("Masa API key not configured.");
   const url = `${MASA_BASE_URL}/search/live/twitter/status/${uuid}`;
+  console.log(url);
+  
   console.log("Checking Masa job status for UUID:", uuid);
   try {
     const response = await fetch(url, {
@@ -84,6 +81,9 @@ export const checkMasaJobStatus = async (uuid) => {
         Authorization: `Bearer ${MASA_API_KEY}`,
       },
     });
+
+    console.log(response);
+    
     if (!response.ok) {
       const errorText = await response.text();
       console.error(
@@ -121,7 +121,7 @@ export const checkMasaJobStatus = async (uuid) => {
 export const getMasaJobResults = async (uuid) => {
   if (!MASA_API_KEY) throw new Error("Masa API key not configured.");
   const url = `${MASA_BASE_URL}/search/live/twitter/result/${uuid}`;
-  console.log("Retrieving Masa job results for UUID:", uuid);
+  console.log("Retrieving Masa job results for UUID:", uuid, MASA_API_KEY);
   try {
     const response = await fetch(url, {
       method: "GET",
@@ -162,6 +162,8 @@ export const searchTweetsWithMasa = async (query, max_results = 100) => {
   let polls = 0;
   while (polls < MAX_POLLS) {
     await sleep(POLLING_INTERVAL);
+
+    console.log(await getMasaJobResults(uuid));
     const status = await checkMasaJobStatus(uuid);
 
     if (status === "done") {

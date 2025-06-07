@@ -6,8 +6,8 @@ import { fetchJson, sleep } from "../../utils/utils";
 import { parsePostToBet, resolveBetWithAI } from "./lib/intent-parser";
 
 // Bot configuration
-const SMOL_BET_BOT = "funnyorfud";
-const ESCROW_BOT_ID = "1869279598522896384";
+const SMOL_BET_BOT = "smol_bet";
+const ESCROW_BOT_ID = "1928891790146306048";
 
 // Configuration constants
 const REPLY_PROCESSING_DELAY = 30000;
