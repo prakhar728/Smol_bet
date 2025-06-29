@@ -1,5 +1,7 @@
 # 🧃 Smol Bet — Onchain Side Bet Protocol
 
+# STATUS - ON HOLD TO MIGRATE FROM MASA TO X API
+
 Smol Bet is a lightweight, trust-minimized **peer-to-peer betting mechanism** that turns informal wagers into enforceable onchain contracts. Users create bets by tagging friends on Twitter/X, staking ETH(Base Sepolia), and settling outcomes based on real-world events — resolved by NEAR AI + Google.
 
 ## No oracles. No middlemen. Just verifiable stakes, AI-enforced outcomes, and automated payouts.
