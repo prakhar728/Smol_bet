@@ -1661,6 +1661,7 @@ dependencies = [
 name = "near-bet-storage"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "near-sdk",
  "near-workspaces",
  "serde_json",
