@@ -4,7 +4,7 @@ import {
   contractCall,
   parseNearAmount,
 } from "@neardefi/shade-agent-js";
-import BET_ESCROW_CONTRACT from "../public/BetEscrow.json";
+import BET_ESCROW_CONTRACT from "../assets/BetEscrow.json";
 
 // BetEscrow contract address
 const BET_ESCROW_ADDRESS = {
@@ -23,7 +23,7 @@ const getProvider = () => {
   );
 };
 
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /**
  * Interface for transfer parameters
