@@ -5,13 +5,13 @@ import { resolveBetWithAI } from "../lib/intent-parser";
 import {
   SETTLEMENT_PROCESSING_DELAY,
   FAKE_REPLY,
-} from "../config/constants";
+} from "../config";
 import {
   pendingSettlement,
   pendingRefund,
   completedBets,
-} from "../queues/state";
-import { resolveBetInContract } from "../services/contracts";
+} from "../state";
+import { resolveBetInContract } from "../services/contract";
 
 export async function processSettlements(): Promise<void> {
   const bet = pendingSettlement.shift();

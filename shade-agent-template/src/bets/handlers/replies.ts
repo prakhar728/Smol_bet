@@ -5,13 +5,12 @@ import { evm } from "../../utils/evm";
 import { sleep } from "../../utils/utils";
 import {
   REPLY_PROCESSING_DELAY,
-  SMOL_BET_BOT,
   FAKE_REPLY,
-} from "../config/constants";
+} from "../config";
 import {
   pendingReply,
   pendingDeposits,
-} from "../queues/state";
+} from "../state";
 
 export async function processReplies(): Promise<void> {
   const post = pendingReply.shift() as

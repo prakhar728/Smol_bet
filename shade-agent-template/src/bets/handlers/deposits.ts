@@ -4,17 +4,17 @@ import { sleep } from "../../utils/utils";
 import {
   DEPOSIT_PROCESSING_DELAY,
   MAX_DEPOSIT_ATTEMPTS,
-  SMOL_BET_BOT,
+  BOT_NAME,
   FAKE_REPLY,
-} from "../config/constants";
+} from "../config";
 import {
   pendingDeposits,
   pendingSettlement,
   pendingRefund,
-} from "../queues/state";
+} from "../state";
 import { getTransactionsForAddress } from "../services/explorer";
-import { createBetInContract } from "../services/contracts";
 import { crosspostReply } from "../../utils/social/crosspost";
+import { createBetInContract } from "../services/contract";
 
 export async function processDeposits(): Promise<void> {
   const bet = pendingDeposits.shift();
@@ -109,7 +109,7 @@ export async function processDeposits(): Promise<void> {
           bet.stake * 2n
         )} ETH\n\nDescription: "${
           bet.description
-        }"\n\nEither party can trigger settlement by tagging @${SMOL_BET_BOT} with "settle bet"`,
+        }"\n\nEither party can trigger settlement by tagging @${BOT_NAME} with "settle bet"`,
         { id: bet.mostRecentTweetId },
         FAKE_REPLY
       );
