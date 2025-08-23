@@ -11,3 +11,5 @@ export const SETTLEMENT_PROCESSING_DELAY = 30000;
 export const MAX_DEPOSIT_ATTEMPTS = 12 * 60; // 12 per minute * 60 mins
 export const POLLING_INTERVAL = 5 * 60 * 1000; // 5 minutes between search polls
 
+export const BASESCAN_API = (networkId: string) =>
+  `https://api${networkId === "testnet" ? "-sepolia" : ""}.basescan.org/api`;
