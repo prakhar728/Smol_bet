@@ -1,4 +1,4 @@
-import { POLLING_INTERVAL, ESCROW_BOT_ID, SEARCH_ONLY } from "../config/constants";
+import { POLLING_INTERVAL, BOT_ID, SEARCH_ONLY } from "../config";
 import { searchTweetsWithMasa } from "../../utils/social/masa";
 import { crosspostReply } from "../../utils/social/crosspost";
 import { sleep } from "../../utils/utils";
@@ -6,7 +6,7 @@ import {
   pendingReply, pendingSettlement, acknowledgedPosts,
   lastSearchTimestamp, lastSettleBetSeachTimestamp,
   setLastSearchTimestamp, setLastSettleTimestamp,
-} from "../queues/state";
+} from "../state";
 
 export async function searchTwitter(): Promise<void> {
   // --- New bet discovery ---
@@ -24,7 +24,7 @@ export async function searchTwitter(): Promise<void> {
     };
     const ts = post.created_at ? Date.parse(post.created_at)/1000 : Math.floor(Date.now()/1000);
     if (ts <= lastSearchTimestamp) continue;
-    if (acknowledgedPosts.has(post.id) || t.Metadata.user_id == ESCROW_BOT_ID) continue;
+    if (acknowledgedPosts.has(post.id) || t.Metadata.user_id == BOT_ID) continue;
 
     acknowledgedPosts.add(post.id);
     if (!SEARCH_ONLY) pendingReply.push(post);
@@ -45,7 +45,7 @@ export async function searchTwitter(): Promise<void> {
     };
     const ts = post.created_at ? Date.parse(post.created_at)/1000 : Math.floor(Date.now()/1000);
     if (ts <= lastSettleBetSeachTimestamp) continue;
-    if (acknowledgedPosts.has(post.id) || t.Metadata.user_id == ESCROW_BOT_ID) continue;
+    if (acknowledgedPosts.has(post.id) || t.Metadata.user_id == BOT_ID) continue;
 
     acknowledgedPosts.add(post.id);
 
