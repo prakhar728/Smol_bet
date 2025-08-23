@@ -1,0 +1,5 @@
+Posted: {
+  edit_history_tweet_ids: [ '1959153753367748818' ],
+  id: '1959153753367748818',
+  text: 'Hello X 👋 #SmolBet'
+}
