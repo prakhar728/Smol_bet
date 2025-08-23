@@ -1,29 +1,6 @@
-// src/near/nearAi.ts
+import { NearBearer, Thread, RunResponse, ThreadMessage } from "./types";
+
 const BASE_URL = process.env.NEAR_AI_BASE_URL ?? "https://api.near.ai";
-
-export type NearBearer = string; // "near_xxx..." token in Authorization: Bearer <token>
-
-export interface ThreadMessage {
-  id: string;
-  role: "user" | "assistant" | string;
-  content: string;
-  created_at?: string;
-  metadata?: Record<string, any>;
-}
-
-export interface Thread {
-  id: string;
-  messages?: ThreadMessage[];
-  metadata?: Record<string, any>;
-}
-
-export interface RunResponse {
-  run_id: string;
-  thread_id: string;
-  status?: "queued" | "running" | "succeeded" | "failed";
-  output_message_id?: string;
-  [k: string]: any;
-}
 
 type Json = Record<string, any>;
 
@@ -53,7 +30,7 @@ async function http<T = Json>(
   }
 }
 
-/** Create a new thread with an initial user message */
+/** Create a new thread with an optional initial message. */
 export async function createThread(
   auth: NearBearer,
   initialMessage?: string,
@@ -71,7 +48,7 @@ export async function createThread(
   });
 }
 
-/** Run an agent on a thread with a new message. Returns run metadata. */
+/** Run an agent on a thread with a new message. */
 export async function runAgent(
   auth: NearBearer,
   agentId: string,
@@ -107,10 +84,10 @@ export async function fetchThreadState(
   limit = 50
 ): Promise<{ data: ThreadMessage[] }> {
   const qs = new URLSearchParams({ order: "desc", limit: String(limit) });
-  return http<{ data: ThreadMessage[] }>(`/v1/threads/${threadId}/messages?${qs.toString()}`, {
-    method: "GET",
-    headers: headers(auth),
-  });
+  return http<{ data: ThreadMessage[] }>(
+    `/v1/threads/${threadId}/messages?${qs.toString()}`,
+    { method: "GET", headers: headers(auth) }
+  );
 }
 
 /** Helper: run agent then poll until an assistant reply appears (or timeout). */
@@ -119,19 +96,20 @@ export async function runAgentAndWait(opts: {
   agentId: string;
   threadId: string;
   message: string;
-  timeoutMs?: number;    // total time to wait
-  pollEveryMs?: number;  // polling interval
+  timeoutMs?: number;
+  pollEveryMs?: number;
 }): Promise<{ reply?: ThreadMessage; run: RunResponse }> {
-  const { auth, agentId, threadId, message, timeoutMs = 25_000, pollEveryMs = 1_000 } = opts;
+  const { auth, agentId, threadId, message, timeoutMs = 25_000, pollEveryMs = 1_000 } =
+    opts;
 
   const run = await runAgent(auth, agentId, threadId, message);
 
   const started = Date.now();
   while (Date.now() - started < timeoutMs) {
     const { data } = await fetchThreadState(auth, threadId, 20);
-    const reply = data.find(m => m.role !== "user"); // first non-user (assistant/agent) message
+    const reply = data.find((m) => m.role !== "user");
     if (reply) return { reply, run };
-    await new Promise(r => setTimeout(r, pollEveryMs));
+    await new Promise((r) => setTimeout(r, pollEveryMs));
   }
   return { reply: undefined, run };
 }
