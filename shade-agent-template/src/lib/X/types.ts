@@ -5,6 +5,8 @@ export interface Post {
   id: PostID;
   text: string;
   author_id?: UserID;
+  author_username?: string;
+  author_name?: string;
   created_at?: string;
   conversation_id?: string;
   referenced_tweets?: { type: 'replied_to'|'quoted'|'retweeted'; id: PostID }[];
