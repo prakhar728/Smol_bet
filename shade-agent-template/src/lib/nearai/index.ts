@@ -103,11 +103,13 @@ export async function runAgentAndWait(opts: {
     opts;
 
   const run = await runAgent(auth, agentId, threadId, message);
-
+  
   const started = Date.now();
   while (Date.now() - started < timeoutMs) {
     const { data } = await fetchThreadState(auth, threadId, 20);
-    const reply = data.find((m) => m.role !== "user");
+
+    const reply = data.find((m) => m.metadata?.message_type !== "system:output_file");
+    
     if (reply) return { reply, run };
     await new Promise((r) => setTimeout(r, pollEveryMs));
   }

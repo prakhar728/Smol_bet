@@ -3,7 +3,7 @@ export type NearBearer = string; // "near_xxx..." token in Authorization: Bearer
 export interface ThreadMessage {
   id: string;
   role: "user" | "assistant" | string;
-  content: string;
+  content: object;
   created_at?: string;
   metadata?: Record<string, any>;
 }
