@@ -6,6 +6,7 @@ import {
   setLastSearchTimestamp, setLastSettleTimestamp,
 } from "../state";
 import { searchRecent } from "../../lib/X/endpoints/xSearchRecent";
+import { xPost } from "../../lib/X/endpoints/xPost";
 
 export async function searchTwitter(): Promise<void> {
   // --- New bet discovery ---
@@ -82,12 +83,11 @@ export async function searchTwitter(): Promise<void> {
       // move to front so settlements loop picks it next
       pendingSettlement.splice(idx, 1);
       pendingSettlement.unshift(bet);
-      
+
     } else if (!SEARCH_ONLY) {
-      await crosspostReply(
+      await xPost(
         `Sorry @${post.author_username}, I couldn’t find an active bet to settle.`,
-        post as any,
-        false
+        post.id,
       );
     }
     if (ts > lastSettleBetSeachTimestamp) setLastSettleTimestamp(ts);
