@@ -1,5 +1,3 @@
-import { parsePostToBet } from "../../lib/intent-parser";
-import { crosspostReply } from "../../utils/social/crosspost";
 import { generateAddress, networkId } from "@neardefi/shade-agent-js";
 import { evm } from "../../utils/evm";
 import { sleep } from "../../utils/utils";
@@ -11,6 +9,7 @@ import {
   pendingReply,
   pendingDeposits,
 } from "../state";
+import { xPost } from "../../lib/X/endpoints/xPost";
 
 export async function processReplies(): Promise<void> {
   const post = pendingReply.shift() as
@@ -32,10 +31,9 @@ export async function processReplies(): Promise<void> {
     const betInfo = await parsePostToBet(post.text);
 
     if (!betInfo || betInfo.includes("INVALID")) {
-      await crosspostReply(
+      await xPost(
         `Sorry, I couldn't understand the bet format. Please use: "@username I bet you X ETH that [condition]"`,
-        post,
-        FAKE_REPLY
+        post.id,
       );
       await sleep(REPLY_PROCESSING_DELAY);
       return void processReplies();
@@ -48,10 +46,9 @@ export async function processReplies(): Promise<void> {
 
     const stake = BigInt(Math.floor(parseFloat(stakeAmountStr) * 1e18));
     if (stake <= 0n) {
-      await crosspostReply(
+      await xPost(
         `Sorry, the bet amount must be greater than 0 ETH.`,
-        post,
-        FAKE_REPLY
+        post.id,
       );
       await sleep(REPLY_PROCESSING_DELAY);
       return void processReplies();
@@ -81,23 +78,22 @@ export async function processReplies(): Promise<void> {
       chain: "evm",
     });
 
-    const response = await crosspostReply(
+    const response = await xPost(
       `I got you! \n @${post.author_username} deposit ${formattedStake} ETH to ${authorDepositAddress} \n and @${opponentUsername} deposit ${formattedStake} ETH to ${opponentDepositAddress}`,
-      post,
-      FAKE_REPLY
+      post.id,
     );
 
-    if (response?.data) {
+    if (response) {
       const conversationId = post.conversation_id || post.id;
 
       const bet = {
         id: post.id,
         conversationId,
-        creatorUsername: post.author_username,
+        creatorUsername: post.author_username ? post.author_username : "Unknown authorname",
         opponentUsername,
         stake,
         description,
-        mostRecentTweetId: response.data.results[0]["details"]["id"],
+        mostRecentTweetId: response.id,
         authorBetPath,
         authorDepositAddress,
         opponentBetPath,
