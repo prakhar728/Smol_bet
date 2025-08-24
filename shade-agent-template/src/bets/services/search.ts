@@ -1,4 +1,4 @@
-import { POLLING_INTERVAL, BOT_ID, SEARCH_ONLY } from "../config";
+import { POLLING_INTERVAL, BOT_ID, SEARCH_ONLY, BOT_NAME } from "../config";
 import { searchTweetsWithMasa } from "../../utils/social/masa";
 import { crosspostReply } from "../../utils/social/crosspost";
 import { sleep } from "../../utils/utils";
@@ -7,10 +7,13 @@ import {
   lastSearchTimestamp, lastSettleBetSeachTimestamp,
   setLastSearchTimestamp, setLastSettleTimestamp,
 } from "../state";
+import { searchRecent } from "../../lib/X/endpoints/xSearchRecent";
 
 export async function searchTwitter(): Promise<void> {
   // --- New bet discovery ---
-  const betTweets = await searchTweetsWithMasa(`@funnyorfud "bet"`, 100).catch(() => []);
+  // const betTweets = await searchTweetsWithMasa(`@${BOT_NAME} "bet"`, 100).catch(() => []);
+  const startTime = new Date(lastSearchTimestamp * 1000).toISOString();
+  const betTweets = await searchRecent(`@${BOT_NAME} "bet"`, "", startTime);
   let latest = lastSearchTimestamp;
 
   for (const t of betTweets ?? []) {

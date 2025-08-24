@@ -17,7 +17,7 @@ export async function processReplies(): Promise<void> {
     | ({
         id: string;
         text: string;
-        author_username: string;
+        author_username?: string;
         conversation_id?: string;
         created_at?: string;
         replyAttempt: number;
