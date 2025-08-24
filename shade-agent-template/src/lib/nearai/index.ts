@@ -103,8 +103,6 @@ export async function runAgentAndWait(opts: {
     opts;
 
   const run = await runAgent(auth, agentId, threadId, message);
-
-  console.log(run);
   
   const started = Date.now();
   while (Date.now() - started < timeoutMs) {
