@@ -5,7 +5,6 @@ import {
   DEPOSIT_PROCESSING_DELAY,
   MAX_DEPOSIT_ATTEMPTS,
   BOT_NAME,
-  FAKE_REPLY,
 } from "../config";
 import {
   pendingDeposits,
@@ -13,8 +12,8 @@ import {
   pendingRefund,
 } from "../state";
 import { getTransactionsForAddress } from "../services/explorer";
-import { crosspostReply } from "../../utils/social/crosspost";
 import { createBetInContract } from "../services/contract";
+import { xPost } from "../../lib/X/endpoints/xPost";
 
 export async function processDeposits(): Promise<void> {
   const bet = pendingDeposits.shift();
@@ -77,7 +76,7 @@ export async function processDeposits(): Promise<void> {
     const transferResult = await evm.transferDepositsToResolver({
       creatorDepositAddress: bet.authorDepositAddress,
       opponentDepositAddress: bet.opponentDepositAddress,
-      resolverAddress: bet.resolverAddress,
+      resolverAddress: bet.resolverAddress || "0x0",
       creatorBetPath: bet.authorBetPath,
       opponentBetPath: bet.opponentBetPath,
     });
@@ -102,16 +101,12 @@ export async function processDeposits(): Promise<void> {
     if (betResult.success) {
       bet.betId = betResult.betId;
 
-      await crosspostReply(
-        `Bet created! 🎲\n\nBet between @${bet.creatorUsername} and @${
-          bet.opponentUsername
-        } is now active!\n\nTotal stake: ${evm.formatBalance(
-          bet.stake * 2n
-        )} ETH\n\nDescription: "${
-          bet.description
-        }"\n\nEither party can trigger settlement by tagging @${BOT_NAME} with "settle bet"`,
-        { id: bet.mostRecentTweetId },
-        FAKE_REPLY
+      await xPost(
+        `Bet created!
+        \n\nBet between @${bet.creatorUsername} and @${bet.opponentUsername} is now active!
+        \n\nTotal stake: ${evm.formatBalance(bet.stake * 2n)} ETH\n\nDescription: "${bet.description}"
+        \n\nEither party can trigger settlement by tagging @${BOT_NAME} with "settle bet"`,
+        bet.mostRecentTweetId,
       );
 
       pendingSettlement.push(bet);
