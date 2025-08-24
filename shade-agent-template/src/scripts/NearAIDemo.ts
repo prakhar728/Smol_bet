@@ -21,12 +21,12 @@ async function demo() {
     throw new Error("Set NEAR_SIGNED_AUTH env var to your NEAR AI Hub bearer token.");
   }
 
-  const agentId = process.env.NEAR_AI_AGENT_ID || "your-agent-id"; // <- set me
-  const userQuestion = "Summarize the latest feature flags in our project repo.";
+  const agentId = process.env.NEAR_AI_AGENT_ID || "ai-creator.near/bet-parser/latest"; // <- set me
+  const userQuestion = "@funnyorfud I bet @_fiatisabubble .000001 ETH the Warriors will win game 2 of the Western Conference semi-finals on Thursday May 8th";
 
   // 1) Create a thread with an initial message (optional metadata)
   const thread = await createThread(auth, "Hello NearAI 👋", {
-    origin: "demo-script",
+    origin: "demo-script", 
     traceId: crypto.randomUUID?.() ?? String(Date.now()),
   });
 
@@ -46,14 +46,10 @@ async function demo() {
   if (reply) {
     console.log("\nAssistant replied:");
     console.log(`- role: ${reply.role}`);
-    console.log(`- content:\n${reply.content}`);
+    console.log(`- content:\n${reply.content[0]?.text?.value}`);
   } else {
     // No assistant msg in time; you can still fetch the thread to inspect messages
     console.warn("No assistant reply yet. Checking thread state…");
-    const state = await fetchThreadState(auth, thread.id, 20);
-    for (const m of state.data) {
-      console.log(`[${m.role}] ${m.content.slice(0, 120)}${m.content.length > 120 ? "…" : ""}`);
-    }
   }
 }
 
