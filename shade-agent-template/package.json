@@ -15,6 +15,9 @@
   },
   "dependencies": {
     "@hono/node-server": "^1.15.0",
+    "@near-js/accounts": "^2.2.5",
+    "@near-js/providers": "^2.2.5",
+    "@near-js/signers": "^2.2.5",
     "@neardefi/shade-agent-js": "^1.0.0",
     "chainsig.js": "^1.1.9",
     "cors": "^2.8.5",
