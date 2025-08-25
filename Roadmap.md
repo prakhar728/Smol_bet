@@ -37,3 +37,42 @@
 - Prepare documentation, README, and onboarding guide for public release  
 
 **🎯 Goal:** Fully tested, stable Smol Bet running on **Base Sepolia** by end of September.
+
+## **Q1 2026 (Jan → Mar) — Solana Research & Prototype**  
+
+**Product Goals**  
+- 🚀 Begin **research and design** for Smol Bet on **Solana**.  
+- Prototype a **basic escrow contract** on Solana testnet.
+- Launch a **minimal viable version** of Smol Bet on Solana devnet.  
+
+
+**Technical Goals**  
+- Build a **treasury module** for the 1% protocol fee.  
+- Deep dive into **Solana runtime & account structure** for escrow logic.  
+- Explore **Anchor framework** for program development.  
+- Build an early **bet_parser integration** that outputs Solana-compatible instructions.  
+- Research Solana **indexing/observability tools** (Helius, RPC infra).  
+- Set up a **local validator + CI pipeline** for Solana program testing.  
+
+---
+
+## **Q2 2026 (Apr → Jun) — MVP Testing, Feedback & Promotion**  
+
+**Product Goals**  
+- Run **cross-chain campaigns** on both **Solana devnet** and **Base mainnet** to attract early users.  
+- Actively **promote Smol Bet within Solana and Base communities** (CT, Farcaster, Solana ecosystem).  
+- Onboard a group of **early testers** and run structured feedback loops.  
+- Iterate on UX (bet creation flow, notifications, bet history).  
+- Begin **sponsored or community-driven bet campaigns** to test engagement.  
+
+**Technical Goals**  
+- Refine **Solana escrow program** based on tester feedback.  
+- Enhance **treasury module** for transparent fee accounting.  
+- Optimize settlement and payout flows for **speed + reliability**.  
+- Improve monitoring + analytics dashboards to track bet volume, success rates, and campaign metrics.  
+- Address bugs and improve fault tolerance uncovered during campaigns.  
+
+---
+
+🎯 **End of Q2 milestone:**  
+Smol Bet will be actively **tested and promoted on both Solana and Base**, with **real user campaigns, feedback-driven improvements, and stronger UX** — moving from a prototype into a **community-validated cross-chain product**.  
