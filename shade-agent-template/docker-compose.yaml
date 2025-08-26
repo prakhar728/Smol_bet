@@ -8,6 +8,17 @@ services:
       APP_CODEHASH: ${APP_CODEHASH}
       NEXT_PUBLIC_contractId: ${NEXT_PUBLIC_contractId}
       NEAR_RPC_JSON: ${NEAR_RPC_JSON}
+      X_API_KEY: ${X_API_KEY}
+      X_API_SECRET: ${X_API_SECRET}
+      X_BEARER: ${X_BEARER}
+      X_ACCESS_TOKEN: ${X_ACCESS_TOKEN}
+      X_ACCESS_SECRET: ${X_ACCESS_SECRET}
+      NEAR_SIGNED_AUTH: ${NEAR_SIGNED_AUTH}
+
+      NEAR_NETWORK: ${NEAR_NETWORK}
+      CONTRACT_ID: ${CONTRACT_ID}
+      ACCOUNT_ID: ${ACCOUNT_ID}
+      PRIVATE_KEY: ${PRIVATE_KEY}
     platform: linux/amd64 # Explicitly set for TDX
     # shade-agent-api-image
     image: mattdlockyer/shade-agent-api@sha256:a86e3a4300b069c08d629a38d61a3d780f7992eaf36aa505e4527e466553e2e5
