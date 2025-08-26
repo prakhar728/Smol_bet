@@ -2,6 +2,10 @@
 import "dotenv/config";
 import { callFunction, viewFunction } from "../lib/near/functions";
 import { Bet } from "../lib/near/types";
+import * as dotenv from "dotenv";
+
+
+dotenv.config({ path: ".env.development.local" });
 
 const CONTRACT_ID = process.env.CONTRACT_ID!;
 if (!CONTRACT_ID) throw new Error("Set CONTRACT_ID in .env");

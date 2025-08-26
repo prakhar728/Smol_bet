@@ -1,8 +1,6 @@
-// lib/near/functions.ts
 import { wNEAR, USDT } from "@near-js/tokens/testnet"; // swap to /mainnet in prod
-import { FungibleToken } from "@near-js/tokens";
-import { actionCreators } from "@near-js/transactions";
 import { getNearClient, requireSignerAccount } from "./client";
+import { TxExecutionStatus } from "./types";
 
 /** ---------- View helpers ---------- */
 
@@ -36,7 +34,7 @@ export async function callFunction<T = unknown>(params: {
   args?: Record<string, unknown>;
   depositNEAR?: string;   // e.g. "0.001"
   gasTGas?: number;       // e.g. 30
-  waitUntil?: "NONE" | "OPTIMISTIC" | "FINAL";
+  waitUntil?: TxExecutionStatus;
 }): Promise<T | undefined> {
   const deps = await getNearClient();
   const account = requireSignerAccount(deps);
@@ -70,130 +68,8 @@ export async function getNearBalance(): Promise<string> {
   return wNEAR.toDecimal(amount);                 // e.g. "1.2345"
 }
 
-/**
- * Transfer native NEAR to a receiver.
- */
-export async function transferNear(params: {
-  receiverId: string;
-  amountNEAR: string; // e.g. "0.1"
-  waitUntil?: "NONE" | "OPTIMISTIC" | "FINAL";
-}) {
-  const deps = await getNearClient();
-  const account = requireSignerAccount(deps);
-  return account.transfer({
-    token: wNEAR,
-    amount: wNEAR.toUnits(params.amountNEAR),
-    receiverId: params.receiverId,
-    waitUntil: params.waitUntil ?? "FINAL",
-  });
-}
 
-/**
- * Get an FT balance. Defaults to testnet USDT; pass a contract to override.
- */
-export async function getFtBalance(params?: {
-  tokenContractId?: string; // custom NEP-141 contract
-  decimals?: number;
-  symbol?: string;
-}): Promise<string> {
-  const { provider } = await getNearClient();
-  const deps = await getNearClient();
-  const account = requireSignerAccount(deps);
 
-  if (!params?.tokenContractId) {
-    const amount = await account.getBalance(USDT);
-    return USDT.toDecimal(amount);
-  }
 
-  const token = new FungibleToken(params.tokenContractId, {
-    decimals: params.decimals ?? 24,
-    symbol: params.symbol ?? "TKN",
-  });
 
-  const amount = await account.getBalance(token);
-  return token.toDecimal(amount);
-}
 
-/**
- * Ensure an FT registration then transfer amount.
- */
-export async function transferFt(params: {
-  tokenContractId: string;
-  decimals?: number;
-  symbol?: string;
-  receiverId: string;
-  amount: string; // human-readable, e.g. "1.23"
-}) {
-  const deps = await getNearClient();
-  const account = requireSignerAccount(deps);
-
-  const token = new FungibleToken(params.tokenContractId, {
-    decimals: params.decimals ?? 24,
-    symbol: params.symbol ?? "TKN",
-  });
-
-  await token.registerAccount({
-    accountIdToRegister: params.receiverId,
-    fundingAccount: account,
-  });
-
-  return account.transfer({
-    token,
-    amount: token.toUnits(params.amount),
-    receiverId: params.receiverId,
-    waitUntil: "FINAL",
-  });
-}
-
-/** ---------- Keys & account mgmt ---------- */
-
-/**
- * List access keys of any account.
- */
-export async function listAccessKeys(accountId: string) {
-  const { provider } = await getNearClient();
-  return provider.viewAccessKeyList(accountId);
-}
-
-/**
- * Add a full-access key to the signer’s account.
- */
-export async function addFullAccessKey(publicKey: string) {
-  const deps = await getNearClient();
-  const account = requireSignerAccount(deps);
-
-  return account.signAndSendTransaction({
-    receiverId: account.accountId,
-    actions: [actionCreators.addKey(publicKey, actionCreators.fullAccessKey())],
-    waitUntil: "FINAL",
-  });
-}
-
-/**
- * Add a function-call key to the signer’s account.
- */
-export async function addFunctionCallKey(params: {
-  publicKey: string;
-  contractId: string;
-  methodNames?: string[];
-  allowanceNEAR?: string; // e.g. "0.25"
-}) {
-  const deps = await getNearClient();
-  const account = requireSignerAccount(deps);
-
-  return account.addFunctionCallAccessKey({
-    publicKey: params.publicKey,
-    contractId: params.contractId,
-    methodNames: params.methodNames ?? [],
-    allowance: params.allowanceNEAR ? wNEAR.toUnits(params.allowanceNEAR) : undefined,
-  });
-}
-
-/**
- * Delete a key from the signer’s account.
- */
-export async function deleteAccessKey(publicKey: string) {
-  const deps = await getNearClient();
-  const account = requireSignerAccount(deps);
-  return account.deleteKey(publicKey);
-}

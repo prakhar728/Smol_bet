@@ -1,8 +1,8 @@
 // lib/near/client.ts
-import { JsonRpcProvider, FailoverRpcProvider } from "@near-js/providers";
+import { JsonRpcProvider, FailoverRpcProvider, type Provider } from "@near-js/providers";
 import { Account } from "@near-js/accounts";
 import { KeyPairSigner } from "@near-js/signers";
-import { KeyPair } from "@near-js/crypto";
+import { KeyPair, KeyPairString } from "@near-js/crypto";
 
 export type NearEnv = {
   NEAR_NETWORK: "mainnet" | "testnet";
@@ -12,16 +12,16 @@ export type NearEnv = {
 };
 
 type ClientDeps = {
-  provider: JsonRpcProvider;
+  provider: Provider;      // accept either JsonRpcProvider or FailoverRpcProvider
   signer?: KeyPairSigner;
-  account?: Account;               // only if ACCOUNT_ID + PRIVATE_KEY present
+  account?: Account;
   network: NearEnv["NEAR_NETWORK"];
 };
 
 /**
  * Build a FailoverRpcProvider from env or fall back to sane defaults.
  */
-export function buildProvider(network: NearEnv["NEAR_NETWORK"], urls?: string) {
+export function buildProvider(network: NearEnv["NEAR_NETWORK"], urls?: string): Provider {
   const defaultUrls =
     network === "mainnet"
       ? ["https://rpc.mainnet.near.org", "https://free.rpc.fastnear.com"]
@@ -30,11 +30,8 @@ export function buildProvider(network: NearEnv["NEAR_NETWORK"], urls?: string) {
   const list = (urls?.split(",").map(s => s.trim()).filter(Boolean) ?? defaultUrls)
     .map(u => new JsonRpcProvider({ url: u }));
 
-  return new FailoverRpcProvider(list, {
-    retries: 3,
-    backoff: 2,
-    wait: 500,
-  });
+  // (optional) add retry/backoff options:
+  return new FailoverRpcProvider(list);
 }
 
 /**
@@ -44,11 +41,10 @@ export async function getNearClient(env: Partial<NearEnv> = {}): Promise<ClientD
   const network = (env.NEAR_NETWORK ?? process.env.NEAR_NETWORK ?? "testnet") as NearEnv["NEAR_NETWORK"];
   const rpcUrls = env.NEAR_RPC_URLS ?? process.env.NEAR_RPC_URLS;
   const ACCOUNT_ID = env.ACCOUNT_ID ?? process.env.ACCOUNT_ID;
-  const PRIVATE_KEY = env.PRIVATE_KEY ?? process.env.PRIVATE_KEY;
+  const PRIVATE_KEY = (env.PRIVATE_KEY ?? process.env.PRIVATE_KEY) as KeyPairString;  // <- plain string
 
   const provider = buildProvider(network, rpcUrls);
 
-  // Create signer + account only if creds are present
   if (ACCOUNT_ID && PRIVATE_KEY) {
     const keyPair = KeyPair.fromString(PRIVATE_KEY);
     const signer = new KeyPairSigner(keyPair);

@@ -2,7 +2,6 @@
 import {
   createThread,
   runAgentAndWait,
-  fetchThreadState,
 } from "../lib/nearai"; // adjust path
 import { NearBearer } from "../lib/nearai/types";
 import * as dotenv from "dotenv";

@@ -12,3 +12,5 @@ export interface Bet {
   remarks: string;
   betstatus: BetStatus;
 }
+
+export type TxExecutionStatus = 'NONE' | 'INCLUDED' | 'INCLUDED_FINAL' | 'EXECUTED' | 'FINAL' | 'EXECUTED_OPTIMISTIC';
