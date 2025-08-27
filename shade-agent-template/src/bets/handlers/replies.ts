@@ -3,13 +3,13 @@ import { evm } from "../../utils/evm";
 import { sleep } from "../../utils/utils";
 import {
   REPLY_PROCESSING_DELAY,
-  FAKE_REPLY,
 } from "../config";
 import {
   pendingReply,
   pendingDeposits,
 } from "../state";
 import { xPost } from "../../lib/X/endpoints/xPost";
+import { parsePostToBet } from "../lib/nearai";
 
 export async function processReplies(): Promise<void> {
   const post = pendingReply.shift() as

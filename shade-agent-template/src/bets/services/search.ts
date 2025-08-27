@@ -9,6 +9,8 @@ import { searchRecent } from "../../lib/X/endpoints/xSearchRecent";
 import { xPost } from "../../lib/X/endpoints/xPost";
 
 export async function searchTwitter(): Promise<void> {
+  console.log("Searching Posts");
+  
   // --- New bet discovery ---
   const startTime = new Date(lastSearchTimestamp * 1000).toISOString();
   const betPosts = await searchRecent(`@${BOT_NAME} "bet"`, undefined, startTime);
@@ -25,6 +27,8 @@ export async function searchTwitter(): Promise<void> {
       replyAttempt: 0,
     };
 
+    console.log("This is a post", post);
+    
     const ts = post.created_at ? Date.parse(post.created_at)/1000 : Math.floor(Date.now()/1000);
 
     if (ts <= lastSearchTimestamp) 
