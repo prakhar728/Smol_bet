@@ -20,3 +20,23 @@ export let lastSettleBetSeachTimestamp =
 export const setLastSearchTimestamp = (v: number) => (lastSearchTimestamp = v);
 export const setLastSettleTimestamp = (v: number) =>
   (lastSettleBetSeachTimestamp = v);
+export const setLoopRunning = (v: boolean) => (isLoopRunning = v);
+
+// NEW: loop running flag
+export let isLoopRunning = false;
+
+export function getStateSnapshot() {
+  return {
+    isLoopRunning,
+    lastSearchTimestamp,
+    lastSettleBetSeachTimestamp,
+    pendingReply,
+    pendingAddressRequest,
+    pendingAddressConfirmation,
+    pendingDeposits,
+    pendingSettlement,
+    pendingRefund,
+    completedBets,
+    acknowledgedPosts: [...acknowledgedPosts],
+  };
+}
