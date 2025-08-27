@@ -1,10 +1,7 @@
 import { sleep } from "../../utils/utils";
-import { crosspostReply } from "../../utils/social/crosspost";
 import { evm } from "../../utils/evm";
-import { resolveBetWithAI } from "../lib/intent-parser";
 import {
   SETTLEMENT_PROCESSING_DELAY,
-  FAKE_REPLY,
 } from "../config";
 import {
   pendingSettlement,
@@ -13,6 +10,7 @@ import {
 } from "../state";
 import { resolveBetInContract } from "../services/contract";
 import { xPost } from "../../lib/X/endpoints/xPost";
+import { resolveBetWithAI } from "../lib/nearai";
 
 export async function processSettlements(): Promise<void> {
   const bet = pendingSettlement.shift();

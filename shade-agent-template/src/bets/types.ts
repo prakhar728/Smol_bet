@@ -22,6 +22,8 @@ export interface Bet {
   authorDepositAddress: string;
   opponentBetPath: string;
   opponentDepositAddress: string;
+  winner?: string;
+  settlementTx?: string;
   resolverAddress?: string;
   betPath?: string;
   betId?: number;

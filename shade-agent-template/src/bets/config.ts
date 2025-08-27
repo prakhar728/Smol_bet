@@ -16,3 +16,5 @@ export const BASESCAN_API = (networkId: string) =>
 
 export const FAKE_REPLY = process.env.FAKE_REPLY === "true";
 export const SEARCH_ONLY = process.env.SEARCH_ONLY === "true";
+
+export const NEAR_SIGNED_AUTH = process.env.NEAR_SIGNED_AUTH || "";
