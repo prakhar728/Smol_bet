@@ -12,6 +12,7 @@ import {
   completedBets,
 } from "../state";
 import { resolveBetInContract } from "../services/contract";
+import { xPost } from "../../lib/X/endpoints/xPost";
 
 export async function processSettlements(): Promise<void> {
   const bet = pendingSettlement.shift();
@@ -51,12 +52,11 @@ export async function processSettlements(): Promise<void> {
     );
 
     if (result.success) {
-      await crosspostReply(
+      await xPost(
         `Bet settled! 🎉\n\n@${winnerUsername} won ${evm.formatBalance(
           (bet.stake * 2n * 99n) / 100n
         )} ETH\n\nReason: ${settlementReason}\n\nTx: ${result.explorerLink}`,
-        bet.settlementTweet!,
-        FAKE_REPLY
+        bet.settlementTweet.id,
       );
 
       completedBets.push({

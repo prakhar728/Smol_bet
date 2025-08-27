@@ -127,7 +127,7 @@ For Phala deployments swap localhost:3000 for your deployment URL
 Get the Agent account and it's balance:
 
 ```
-https://localhost:3000/api/agent-account
+http://localhost:3000/api/agent-account
 ```
 
 Get the derived Ethereum Sepolia account and it's balance (you will need to fund this):
