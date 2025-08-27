@@ -1,4 +1,5 @@
 // ./usage.ts
+import { NEAR_SIGNED_AUTH } from "../bets/config";
 import {
   createThread,
   runAgentAndWait,
@@ -15,7 +16,7 @@ dotenv.config({ path: ".env.development.local" });
  *   export NEAR_AI_BASE_URL="https://api.near.ai" (optional; defaults to this)
  */
 async function demo1() {
-  const auth = (process.env.NEAR_SIGNED_AUTH || "").trim() as NearBearer;
+  const auth = NEAR_SIGNED_AUTH.trim() as NearBearer;
   if (!auth) {
     throw new Error("Set NEAR_SIGNED_AUTH env var to your NEAR AI Hub bearer token.");
   }
@@ -60,7 +61,7 @@ async function demo1() {
  *   export NEAR_AI_BASE_URL="https://api.near.ai" (optional; defaults to this)
  */
 async function demo2() {
-  const auth = (process.env.NEAR_SIGNED_AUTH || "").trim() as NearBearer;
+  const auth = NEAR_SIGNED_AUTH.trim() as NearBearer;
   if (!auth) {
     throw new Error("Set NEAR_SIGNED_AUTH env var to your NEAR AI Hub bearer token.");
   }

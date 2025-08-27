@@ -6,7 +6,7 @@ import {
 } from "../../lib/nearai/index";
 import type { NearBearer, ThreadMessage } from "../../lib/nearai/types";
 
-const AUTH = (process.env.NEAR_SIGNED_AUTH || "").trim() as NearBearer;
+const AUTH = NEAR_SIGNED_AUTH.trim() as NearBearer;
 
 function pickAssistantText(messages: ThreadMessage[] | undefined): string | undefined {
   if (!messages?.length) return undefined;
