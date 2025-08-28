@@ -1,10 +1,12 @@
 // Find all our documentation at https://docs.near.org
 use near_sdk::{log, near};
-
+use near_sdk::store::Vector;
+use near_sdk::json_types::U64;
+use near_sdk::serde_json::json;
 
 #[near(serializers = [borsh, json])]
 #[derive(Clone)]
-enum status {
+enum Status {
     Created,
     Staked,
     Resolved
@@ -16,7 +18,7 @@ pub struct Bet {
     pub bet_id: u64,
     pub terms: String,
     pub resolution: String,
-    pub status: status,
+    pub status: Status,
 }
 
 #[near(contract_state)]
@@ -37,29 +39,45 @@ impl Default for BetTermStorage {
 #[near]
 impl BetTermStorage {
 
+    // any user can add this
     pub fn add_bet(&mut self, terms: String) {
         let bet = Bet {
-            id: self.bets.len()+1,
+            bet_id: self.bets.len() as u64 + 1,
             terms: terms,
             resolution: "".to_string(),
-            betstatus: status::Created
+            status: Status::Created
         };
 
         self.bets.push(bet);
     }
 
-    // should only be accessible to the AI.
+    // User trigger this to create logs to trigger the Agent to resolve
     pub fn request_resolve(self, index: u32) {
         let bet = self.bets.get(index);
-        
 
+        let event = json!({
+            "standard": "nearai",
+            "version": "0.1.0",
+            "event": "run_agent",
+            "data": [
+                {
+                    "message":  bet.unwrap().terms,
+                    "agent": "user.near/agent-name/latest",
+                    "env_vars": null,
+                    "signer_id": "account.near",
+                    "referral_id": null,
+                    "request_id": null,
+                    "amount": "0"
+                }
+            ]
+        });
+
+        log!("{}", event.to_string());
     }
 
     // should only be accessible to the AI.
     pub fn update_bet(&mut self, index: u32) {
         let bet = self.bets.get(index);
-
-        
 
     }
 
