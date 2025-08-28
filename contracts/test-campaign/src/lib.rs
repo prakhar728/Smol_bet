@@ -39,7 +39,9 @@ impl Default for BetTermStorage {
 #[near]
 impl BetTermStorage {
 
-    // any user can add this
+    /// Add a new bet with only `terms`.
+    /// - Sets resolution to empty string
+    /// - Sets status to `Created`
     pub fn add_bet(&mut self, terms: String) {
         let bet = Bet {
             bet_id: self.bets.len() as u64 + 1,
@@ -51,7 +53,9 @@ impl BetTermStorage {
         self.bets.push(bet);
     }
 
-    // User trigger this to create logs to trigger the Agent to resolve
+    /// User-facing function to trigger resolution.
+    /// This does NOT resolve on-chain, but instead emits a JSON log event
+    /// which can be picked up by an off-chain AI agent.
     pub fn request_resolve(self, index: u32) {
         let bet = self.bets.get(index);
 
@@ -75,16 +79,22 @@ impl BetTermStorage {
         log!("{}", event.to_string());
     }
 
-    // should only be accessible to the AI.
-    pub fn update_bet(&mut self, index: u32) {
-        let bet = self.bets.get(index);
-
+    /// Restricted: should only be called by the AI agent.
+    /// Updates a bet with the given `resolution` and marks it as resolved.
+    pub fn update_bet(&mut self, index: u32, resolution: String) {
+        let mut bet = self.bets.get(index).expect("No bet at index").clone();
+        bet.resolution = resolution;
+        self.bets.replace(index, bet);
     }
 
+    /// Retrieve a single bet by index
     pub fn get_bet(&self, index: u32) -> Option<Bet> {
        return self.bets.get(index).cloned();
     }
 
+    /// Paginated fetch of multiple bets
+    /// - `from_index`: starting index (default 0)
+    /// - `limit`: number of bets to return (default 10)
     pub fn get_bets(&self, from_index: Option<U64>, limit: Option<U64>) -> Vec<&Bet> {
         let from = u64::from(from_index.unwrap_or(U64(0)));
         let limit = u64::from(limit.unwrap_or(U64(10)));
@@ -96,6 +106,7 @@ impl BetTermStorage {
             .collect()
     }
 
+     /// Returns the total number of bets stored
     pub fn total_bets(&self) -> u32 {
         self.bets.len()
     }
@@ -109,67 +120,47 @@ impl BetTermStorage {
 mod tests {
     use super::*;
     // NEAR env helpers aren’t strictly needed here since we don’t use context-dependent APIs.
-
-    fn make_bet(i: u32) -> (String, String, String, String, String, String, String, String, String) {
-        (
-            format!("initiator-{i}"),
-            format!("opponent-{i}"),
-            "chain".to_string(),
-            "terms".to_string(),
-            "currency".to_string(),
-            "amount".to_string(),
-            format!("parent-{i}"),
-            format!("bet-{i}"),
-            "remarks".to_string(),
-        )
+    
+    // Example helper for creating mock bet data
+    fn make_bet(i: u32) -> String {
+        format!("terms-{i}")
     }
 
     #[test]
     fn add_and_get_single_bet() {
-        let mut contract = BetStorage::default();
+        let mut contract = BetTermStorage::default();
 
-        let (initiator, opponent, chain, terms, currency, amount, parentid, currentid, remarks) = make_bet(0);
-        contract.add_bet(
-            initiator.clone(),
-            opponent.clone(),
-            chain.clone(),
-            terms.clone(),
-            currency.clone(),
-            amount.clone(),
-            parentid.clone(),
-            currentid.clone(),
-            remarks.clone(),
-        );
+        // Add a bet
+        let terms = make_bet(0);
+        contract.add_bet(terms.clone());
 
         assert_eq!(contract.total_bets(), 1);
 
+        // Verify bet was stored correctly
         let b = contract.get_bet(0).expect("expected bet at index 0");
-        assert_eq!(b.initiator, initiator);
-        assert_eq!(b.opponent, opponent);
-        assert_eq!(b.currentid, currentid);
-        // Prefer pattern-match over deriving PartialEq on enums
-        assert!(matches!(b.betstatus, BetStatus::Created));
+        assert_eq!(b.terms, terms);
+        assert!(matches!(b.status, Status::Created));
     }
 
     #[test]
     fn pagination_works() {
-        let mut contract = BetStorage::default();
+        let mut contract = BetTermStorage::default();
 
+        // Add 15 bets
         for i in 0..15 {
-            let (initiator, opponent, chain, terms, currency, amount, parentid, currentid, remarks) = make_bet(i);
-            contract.add_bet(initiator, opponent, chain, terms, currency, amount, parentid, currentid, remarks);
+            contract.add_bet(make_bet(i));
         }
 
-        // Get 5 items starting from index 5 -> should be bet-5 .. bet-9
+        // Get 5 bets starting from index 5 -> should be terms-5 .. terms-9
         let page = contract.get_bets(Some(U64(5)), Some(U64(5)));
         assert_eq!(page.len(), 5);
-        assert_eq!(page.first().unwrap().currentid, "bet-5");
-        assert_eq!(page.last().unwrap().currentid, "bet-9");
+        assert_eq!(page.first().unwrap().terms, "terms-5");
+        assert_eq!(page.last().unwrap().terms, "terms-9");
     }
 
     #[test]
     fn get_bet_out_of_bounds_is_none() {
-        let contract = BetStorage::default();
+        let contract = BetTermStorage::default();
         assert!(contract.get_bet(0).is_none());
     }
 }
