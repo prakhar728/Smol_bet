@@ -1,9 +1,10 @@
 // Find all our documentation at https://docs.near.org
-use near_sdk::{log, near, env};
+use near_sdk::{near};
 use near_sdk::store::Vector;
 use near_sdk::json_types::U64;
-use near_sdk::serde_json::json;
 // use near_sdk::test_utils::{VMContextBuilder, get_logs};
+mod events;
+ use crate::events::run_agent;
 
 #[near(serializers = [borsh, json])]
 #[derive(Clone)]
@@ -49,24 +50,10 @@ impl BetTermStorage {
     pub fn request_resolve(self, index: u32) {
         let bet = self.bets.get(index);
 
-        let event = json!({
-            "standard": "nearai",
-            "version": "0.1.0",
-            "event": "run_agent",
-            "data": [
-                {
-                    "message":  bet.unwrap().terms,
-                    "agent": "ai-creator.near/term-resolver/latest",
-                    "env_vars": null,
-                    "signer_id": env::predecessor_account_id(),
-                    "referral_id": null,
-                    "request_id": null,
-                    "amount": "0"
-                }
-            ]
-        });
-
-        log!("{}", event.to_string());
+        run_agent(
+            &"ai-creator.near/term-resolver/latest".to_string(), // agent
+            &bet.unwrap().terms,                                          // message
+        );
     }
 
     /// Restricted: should only be called by the AI agent.
