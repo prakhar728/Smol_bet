@@ -1,16 +1,9 @@
 // Find all our documentation at https://docs.near.org
-use near_sdk::{log, near};
+use near_sdk::{log, near, env};
 use near_sdk::store::Vector;
 use near_sdk::json_types::U64;
 use near_sdk::serde_json::json;
-
-#[near(serializers = [borsh, json])]
-#[derive(Clone)]
-enum Status {
-    Created,
-    Staked,
-    Resolved
-}
+// use near_sdk::test_utils::{VMContextBuilder, get_logs};
 
 #[near(serializers = [borsh, json])]
 #[derive(Clone)]
@@ -18,7 +11,6 @@ pub struct Bet {
     pub bet_id: u64,
     pub terms: String,
     pub resolution: String,
-    pub status: Status,
 }
 
 #[near(contract_state)]
@@ -41,13 +33,11 @@ impl BetTermStorage {
 
     /// Add a new bet with only `terms`.
     /// - Sets resolution to empty string
-    /// - Sets status to `Created`
     pub fn add_bet(&mut self, terms: String) {
         let bet = Bet {
             bet_id: self.bets.len() as u64 + 1,
             terms: terms,
             resolution: "".to_string(),
-            status: Status::Created
         };
 
         self.bets.push(bet);
@@ -66,9 +56,9 @@ impl BetTermStorage {
             "data": [
                 {
                     "message":  bet.unwrap().terms,
-                    "agent": "user.near/agent-name/latest",
+                    "agent": "ai-creator.near/term-resolver/latest",
                     "env_vars": null,
-                    "signer_id": "account.near",
+                    "signer_id": env::predecessor_account_id(),
                     "referral_id": null,
                     "request_id": null,
                     "amount": "0"
@@ -139,7 +129,6 @@ mod tests {
         // Verify bet was stored correctly
         let b = contract.get_bet(0).expect("expected bet at index 0");
         assert_eq!(b.terms, terms);
-        assert!(matches!(b.status, Status::Created));
     }
 
     #[test]
@@ -162,6 +151,54 @@ mod tests {
     fn get_bet_out_of_bounds_is_none() {
         let contract = BetTermStorage::default();
         assert!(contract.get_bet(0).is_none());
+    }
+
+    #[test]
+    fn update_bet_sets_resolution() {
+        let mut contract = BetTermStorage::default();
+
+        // Arrange
+        let terms = make_bet(1);
+        contract.add_bet(terms.clone());
+        assert_eq!(contract.total_bets(), 1);
+
+        // Act
+        contract.update_bet(0, "TRUE".to_string());
+
+        // Assert
+        let b = contract.get_bet(0).expect("bet should exist");
+        assert_eq!(b.resolution, "TRUE");
+    }
+
+    #[test]
+    fn request_resolve_emits_event() {
+        // Arrange: set predecessor so the contract can include it in the event
+        let mut ctx = VMContextBuilder::new();
+        ctx.predecessor_account_id("alice.near".parse().unwrap());
+        testing_env!(ctx.build());
+
+        let mut contract = BetTermStorage::default();
+        let terms = "Kolkata Night Riders vs Rajasthan Royals results 4th May".to_string();
+        contract.add_bet(terms.clone());
+
+        // Act
+        contract.request_resolve(0);
+
+        // Assert: exactly one log with the expected shape and fields
+        let logs = get_logs();
+        assert_eq!(logs.len(), 1, "expected exactly one event log");
+
+        let v: serde_json::Value = serde_json::from_str(&logs[0]).expect("valid JSON log");
+        assert_eq!(v["standard"], "nearai");
+        assert_eq!(v["version"], "0.1.0");
+        assert_eq!(v["event"], "run_agent");
+
+        // data[0]
+        let d0 = &v["data"][0];
+        assert_eq!(d0["message"], terms);
+        assert_eq!(d0["agent"], "ai-creator.near/term-resolver/latest");
+        assert_eq!(d0["signer_id"], "alice.near");
+        assert_eq!(d0["amount"], "0");
     }
 }
 
