@@ -23,8 +23,12 @@ export function Hero() {
 
             {/* CTAs (matte, no glow) */}
             <div className="flex flex-wrap gap-3">
-              <Button asChild className="bg-[#C3F53B] text-black hover:bg-[#C3F53B]/90">
+              {/* <Button asChild className="bg-[#C3F53B] text-black hover:bg-[#C3F53B]/90">
                 <Link href="https://x.com/funnyorfud" target="_blank" rel="noreferrer">Try the Bot</Link>
+              </Button> */}
+
+              <Button asChild className="bg-[#C3F53B] text-black hover:bg-[#C3F53B]/90">
+                <Link href="campaign" target="_blank" rel="noreferrer">Live Campaign</Link>
               </Button>
               <Button
                 asChild
