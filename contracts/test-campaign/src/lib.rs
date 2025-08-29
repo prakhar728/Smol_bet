@@ -51,8 +51,8 @@ impl BetTermStorage {
         let bet = self.bets.get(index);
 
         run_agent(
-            &"ai-creator.near/term-resolver/latest".to_string(), // agent
-            &bet.unwrap().terms,                                          // message
+            &bet.unwrap().terms, // message
+            &"ai-creator.near/term-resolver/latest".to_string(), // agent  
         );
     }
 

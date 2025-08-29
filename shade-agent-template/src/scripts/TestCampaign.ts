@@ -11,7 +11,7 @@ type Bet = {
   resolution: string;
 };
 
-const CONTRACT_ID = "test-campaign.testnet";
+const CONTRACT_ID = "test-campaign-5.testnet";
 if (!CONTRACT_ID) throw new Error("Set CONTRACT_ID in .env");
 
 async function runAll() {
