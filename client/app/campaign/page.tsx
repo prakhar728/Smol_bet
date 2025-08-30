@@ -39,12 +39,14 @@ export default function AICampaignPage() {
 
   const requestResolve = async (bet_id: number) => {
     setResolvingId(bet_id)
-    // const res: string = await viewFunction({
-    //   contractId: CONTRACT_ID,
-    //   method: "get_resolution",
-    //   args: { bet_id },
-    // });
-    const res = `Mock resolution for bet #${bet_id}` // stub
+    console.log(bet_id);
+    
+    const res = await callFunction({
+      contractId: CONTRACT_ID,
+      method: "request_resolve",
+      args: { index: (bet_id - 1) },
+    });
+
     setResolvingId(null)
   }
 

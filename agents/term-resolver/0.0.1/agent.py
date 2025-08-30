@@ -1,6 +1,8 @@
 from nearai.agents.environment import Environment
 import requests
 from serpapi_client import serpapi_search, SerpApiError
+import json
+import asyncio
 
 BET_TO_QUERY_PROMPT = """
 You are an assistant that converts a bet condition into a search query.
@@ -45,7 +47,7 @@ def run(env: Environment):
         env.add_reply("Sorry. Cannot give you access :)")
         return
 
-    # message = env.get_last_message()
+    message = env.get_last_message()
 
     try:
         resp = requests.get(
