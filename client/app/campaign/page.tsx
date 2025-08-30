@@ -148,10 +148,10 @@ export default function AICampaignPage() {
                           variant="ghost"
                           className="border border-white/15 hover:bg-white/10 rounded-lg h-8 px-3"
                           onClick={() => requestResolve(bet.bet_id)}
-                          disabled={resolvingId === bet.bet_id || resolved}
+                          disabled={true}
                           title={resolved ? "Already resolved" : "Request AI resolution"}
                         >
-                          {resolvingId === bet.bet_id ? "Resolving…" : resolved ? "Resolved" : "Request Resolve"}
+                          {resolvingId === bet.bet_id ? "Resolving…" : resolved ? "Resolved" : "Request Resolve feature is upcoming"}
                         </Button>
                       </div>
                     </article>
