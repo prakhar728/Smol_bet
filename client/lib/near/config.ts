@@ -8,3 +8,4 @@ export const RPC_URL = NETWORK === "mainnet"
 
 export const TGAS = (n: number) => `${n}000000000000`; // 1 TGAS = 1e12
 export const NO_DEPOSIT = "0";
+

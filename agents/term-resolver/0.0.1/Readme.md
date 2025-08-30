@@ -13,7 +13,7 @@ nearai agent interactive ~/.nearai/registry/ai-creator.near/term-resolver/0.0.1 
 
 3. Elon Musk is CEO of Tesla in September 2025
 
-4 NEAR Protocol price is greater than $5 on 1st June 2024
+4. NEAR Protocol price is greater than $5 on 1st June 2024
 
 ## Test json we can send
 

@@ -1,10 +1,10 @@
 // Find all our documentation at https://docs.near.org
-use near_sdk::{near};
+use near_sdk::{near, AccountId, env, require};
 use near_sdk::store::Vector;
 use near_sdk::json_types::U64;
 // use near_sdk::test_utils::{VMContextBuilder, get_logs};
 mod events;
- use crate::events::run_agent;
+use crate::events::run_agent;
 
 #[near(serializers = [borsh, json])]
 #[derive(Clone)]
@@ -12,6 +12,7 @@ pub struct Bet {
     pub bet_id: u64,
     pub terms: String,
     pub resolution: String,
+    pub creator: AccountId,
 }
 
 #[near(contract_state)]
@@ -39,6 +40,7 @@ impl BetTermStorage {
             bet_id: self.bets.len() as u64 + 1,
             terms: terms,
             resolution: "".to_string(),
+            creator: env::predecessor_account_id()
         };
 
         self.bets.push(bet);
@@ -59,6 +61,10 @@ impl BetTermStorage {
     /// Restricted: should only be called by the AI agent.
     /// Updates a bet with the given `resolution` and marks it as resolved.
     pub fn update_bet(&mut self, index: u32, resolution: String) {
+        let caller = env::predecessor_account_id();
+
+        require!(caller.as_str() == "term-resolver.testnet", "Only resolver can update");
+
         let mut bet = self.bets.get(index).expect("No bet at index").clone();
         bet.resolution = resolution;
         self.bets.replace(index, bet);

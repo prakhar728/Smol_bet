@@ -1,14 +1,13 @@
+// components/ConnectWalletButton.tsx
 "use client";
-
 import { Button } from "@/components/ui/button";
-import { useNear } from "@/lib/near/providers";
+import { useWalletSelector } from "@near-wallet-selector/react-hook";
 
 export function ConnectWalletButton() {
-  const { accountId, ready, signIn, signOut } = useNear();
-  if (!ready) return <Button disabled>Loading…</Button>;
-  return accountId ? (
+  const { signedAccountId, signIn, signOut } = useWalletSelector();
+  return signedAccountId ? (
     <Button variant="ghost" className="border border-white/15" onClick={signOut}>
-      {accountId} — Sign out
+      {signedAccountId} — Sign out
     </Button>
   ) : (
     <Button className="bg-[#C3F53B] text-black hover:bg-[#C3F53B]/90" onClick={signIn}>

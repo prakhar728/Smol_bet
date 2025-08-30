@@ -2,7 +2,7 @@
 
 ### Create a new account
 ```bash
-ACCOUNT_NAME=test-campaign-5.testnet
+ACCOUNT_NAME=test-campaign-6.testnet
 near create-account $ACCOUNT_NAME  --useFaucet
 ```
 
