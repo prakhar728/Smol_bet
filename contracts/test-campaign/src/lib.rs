@@ -5,8 +5,8 @@ use near_sdk::json_types::U64;
 use near_sdk::serde_json::{json, Value};
 
 // test imports
-use near_sdk::testing_env;
-use near_sdk::test_utils::{VMContextBuilder, get_logs};
+// use near_sdk::testing_env;
+// use near_sdk::test_utils::{VMContextBuilder, get_logs};
 
 
 mod events;

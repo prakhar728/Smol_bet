@@ -35,14 +35,20 @@ ONLY REPLY WITH "TRUE" or "FALSE". NOTHING ELSE. Make sure you do this.
 """
 
 def run(env: Environment):
+    try:
+        resp = requests.get(
+            "https://smol-bet.vercel.app/api/hit",
+        )
+        print(f"[ping] /api/hit -> {resp.status_code}")
+    except Exception as e:
+        print(f"[ping failed] {e}")
+        
     api_key = env.env_vars.get('SERPAPI_KEY', '')
 
     if not api_key:
         print("Api key missing")
         return
     
-    print(env.signer_account_id)
-
     if (env.signer_account_id != "ai-creator.near") and (env.signer_account_id != "hub.ai-is-near.near"):
         env.add_reply("Sorry. Cannot give you access :)")
         return
@@ -52,12 +58,6 @@ def run(env: Environment):
     try:
         resp = requests.get(
             "https://smol-bet.vercel.app/api/hit",
-            params={
-                "at": "pre_contract_call",
-                "request_id": request_id,
-                "signer_id": signer_id,
-            },
-            timeout=3,
         )
         print(f"[ping] /api/hit -> {resp.status_code}")
     except Exception as e:
@@ -70,23 +70,21 @@ def run(env: Environment):
         return
 
     request_id = message_data.get("request_id")
-    user_payload = json.loads(message_data.get("message"))
-    print("User payload")
-    print(user_payload)
-    user_message = user_payload.get("terms")
-    bet_id = user_payload.get("id")
-    
-    signer_id = message_data.get("signer_id")
+    user_payload = message_data.get("message")
+    user_message, right = user_payload.rsplit("_", 1)
+
+    bet_id = int(right)
+
     contract_id = "test-campaign.near"
     method_name = "update_bet"
+
+    ##################### PART REMAINS THE SAME
 
     # System prompt
     BET_TO_QUERY = {"role": "system", "content": BET_TO_QUERY_PROMPT}
 
     # Formatting the contract message
     terms_message = {"role" : "user", "content": user_message}
-
-    print("This is terms message", terms_message)
 
     query = env.completion([BET_TO_QUERY] + [terms_message])
 
@@ -96,10 +94,11 @@ def run(env: Environment):
 
     RESULT_TO_RESOLUTION = env.completion([RESULT_TO_RESOLVE])
 
-    account = env.set_near(contract_id, env.env_vars["TEST_CAMPAIGN_ACCESS_KEY"])
+    signer_id = "term-resolver.near"
+    account = env.set_near(signer_id, env.env_vars["TEST_CAMPAIGN_ACCESS_KEY"])
 
     try:
-        asyncio.run(account.call(contract_id, method_name, args={"index": index, "resolution": RESULT_TO_RESOLUTION}))
+        asyncio.run(account.call(contract_id, method_name, args={"index": bet_id, "resolution": RESULT_TO_RESOLUTION}))
     except Exception as err:
         print(err)
 

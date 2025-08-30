@@ -11,12 +11,12 @@ type Bet = {
   resolution: string;
 };
 
-const CONTRACT_ID = "test-campaign-15.testnet";
+const CONTRACT_ID = "test-campaign-16.testnet";
 if (!CONTRACT_ID) throw new Error("Set CONTRACT_ID in .env");
 
 async function runAll() {
   // 1) add_bet(terms: String)
-  const terms = `Test bet at ${new Date().toISOString()}`;
+  const terms = `Bitcoin is above 60,000 USD on August 28, 2025`;
   console.log("1) add_bet ->", terms);
   await callFunction({
     contractId: CONTRACT_ID,
