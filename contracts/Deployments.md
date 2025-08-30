@@ -2,7 +2,7 @@
 
 ### Create a new account
 ```bash
-ACCOUNT_NAME=test-campaign-6.testnet
+ACCOUNT_NAME=test-campaign-16.testnet
 near create-account $ACCOUNT_NAME  --useFaucet
 ```
 
@@ -12,24 +12,58 @@ near create-account $ACCOUNT_NAME  --useFaucet
 near deploy $ACCOUNT_NAME  ./target/near/test_campaign.wasm
 ```
 
+### Test
+
+```bash
+cargo test -- --nocapture
+```
+
 ### Example logs for test-campaign
 
 ```bash
 {
+    "data": [
+        {
+            "agent": "ai-creator.near/term-resolver/latest",
+            "env_vars": null,
+            "max_iterations": null,
+            "message": "{"index":0,"terms":"Bitcoin is above 60,
+            000 USD on August 28,
+            2025"}",
+            "referral_id": null,
+            "request_id": null,
+            "signer_id": "ai-creator.near",
+            "thread_id": null
+        }
+    ],
+    "event": "run_agent",
+    "standard": "nearai",
+    "version": "0.1.0"
+}
+```
+
+## According to Nearai
+
+```bash
+{
+  "standard": "nearai",
+  "version": "0.1.0",
+  "event": "run_agent",
   "data": [
     {
-      "agent": "Test bet at 2025-08-29T21:32:59.388Z",
-      "env_vars": null,
+      "message": "Transformer",
+      "agent": "zavodil.near/what-beats-rock/latest",
       "max_iterations": null,
-      "message": "ai-creator.near/term-resolver/latest",
+      "thread_id": null,
+      "env_vars": null,
+      "signer_id": "v01.ai-is-near.near",
       "referral_id": null,
-      "request_id": null,
-      "signer_id": "test-account3.testnet",
-      "thread_id": null
+      "amount": "0"
     }
-  ],
-  "event": "run_agent",
-  "standard": "nearai",
-  "version": "0.1.0"
+  ]
 }
+```
+
+```bash
+{"data":[{"agent":"ai-creator.near/term-resolver/latest","env_vars":null,"max_iterations":null,"message":"foo-term_0","referral_id":null,"request_id":null,"signer_id":"alice.near","thread_id":null}],"event":"run_agent","standard":"nearai","version":"0.1.19"}
 ```

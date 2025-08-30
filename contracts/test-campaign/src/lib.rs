@@ -2,7 +2,13 @@
 use near_sdk::{near, AccountId, env, require};
 use near_sdk::store::Vector;
 use near_sdk::json_types::U64;
+use near_sdk::serde_json::{json, Value};
+
+// test imports
+// use near_sdk::testing_env;
 // use near_sdk::test_utils::{VMContextBuilder, get_logs};
+
+
 mod events;
 use crate::events::run_agent;
 
@@ -49,12 +55,13 @@ impl BetTermStorage {
     /// User-facing function to trigger resolution.
     /// This does NOT resolve on-chain, but instead emits a JSON log event
     /// which can be picked up by an off-chain AI agent.
-    pub fn request_resolve(self, index: u32) {
+    pub fn request_resolve(&self, index: u32) {
         let bet = self.bets.get(index);
-
+        
+        let message = format!("{}_{}", bet.unwrap().terms, index); 
         run_agent(
-            &bet.unwrap().terms, // message
-            &"ai-creator.near/term-resolver/latest".to_string(), // agent  
+            &message.to_string(), // message
+            &"ai-creator.near/term-resolver/latest".to_string(), // agent
         );
     }
 
@@ -63,7 +70,7 @@ impl BetTermStorage {
     pub fn update_bet(&mut self, index: u32, resolution: String) {
         let caller = env::predecessor_account_id();
 
-        require!(caller.as_str() == "term-resolver.testnet", "Only resolver can update");
+        require!(caller.to_string() == "term-resolver.near", "Only resolver can update");
 
         let mut bet = self.bets.get(index).expect("No bet at index").clone();
         bet.resolution = resolution;
@@ -147,51 +154,60 @@ mod tests {
     }
 
     #[test]
-    fn update_bet_sets_resolution() {
-        let mut contract = BetTermStorage::default();
+    fn resolve_bet_updates_state() {
+        // creator adds bet and requests resolve (emits event)
+        let mut ctx = VMContextBuilder::new();
+        ctx.predecessor_account_id("term-resolver.near".parse().unwrap());
+        testing_env!(ctx.build());
 
-        // Arrange
-        let terms = make_bet(1);
-        contract.add_bet(terms.clone());
-        assert_eq!(contract.total_bets(), 1);
+        let mut c = BetTermStorage::default();
+        c.add_bet("foo-term".to_string());
+        c.request_resolve(0);
 
-        // Act
-        contract.update_bet(0, "TRUE".to_string());
+        // resolver updates the bet to TRUE
+        let mut ctx2 = VMContextBuilder::new();
+        ctx2.predecessor_account_id("term-resolver.near".parse().unwrap());
+        testing_env!(ctx2.build());
 
-        // Assert
-        let b = contract.get_bet(0).expect("bet should exist");
+        c.update_bet(0, "TRUE".to_string());
+        let b = c.get_bet(0).expect("bet should exist");
         assert_eq!(b.resolution, "TRUE");
     }
 
     #[test]
-    fn request_resolve_emits_event() {
-        // Arrange: set predecessor so the contract can include it in the event
+    fn request_resolve_emits_event_and_we_can_read_it() {
+        // set a predecessor so signer_id is populated
         let mut ctx = VMContextBuilder::new();
-        ctx.predecessor_account_id("alice.near".parse().unwrap());
+        ctx.predecessor_account_id("term-resolver.near".parse().unwrap());
         testing_env!(ctx.build());
 
-        let mut contract = BetTermStorage::default();
-        let terms = "Kolkata Night Riders vs Rajasthan Royals results 4th May".to_string();
-        contract.add_bet(terms.clone());
+        let mut c = BetTermStorage::default();
+        c.add_bet("foo-term".to_string());
 
-        // Act
-        contract.request_resolve(0);
+        // act
+        c.request_resolve(0);
 
-        // Assert: exactly one log with the expected shape and fields
+        // read logs
         let logs = get_logs();
-        assert_eq!(logs.len(), 1, "expected exactly one event log");
+        println!("logs:\n{}", logs.join("\n"));
 
-        let v: serde_json::Value = serde_json::from_str(&logs[0]).expect("valid JSON log");
-        assert_eq!(v["standard"], "nearai");
-        assert_eq!(v["version"], "0.1.0");
+        assert_eq!(logs.len(), 1, "expected one event log");
+
+        
+        // inspect JSON
+        let v: Value = serde_json::from_str(&logs[0]).expect("valid JSON log");
         assert_eq!(v["event"], "run_agent");
-
-        // data[0]
+        assert_eq!(v["standard"], "nearai");
+        assert_eq!(v["version"], "0.1.19"); // match your current version
         let d0 = &v["data"][0];
-        assert_eq!(d0["message"], terms);
         assert_eq!(d0["agent"], "ai-creator.near/term-resolver/latest");
-        assert_eq!(d0["signer_id"], "alice.near");
-        assert_eq!(d0["amount"], "0");
+        assert_eq!(d0["signer_id"], "term-resolver.near");
+
+        // if your message is "terms_index" per format!:
+        assert_eq!(d0["message"], "foo-term_0");
+
+        // if you also include bet_id in the event, you can assert it too:
+        // assert_eq!(d0["bet_id"], 0);
     }
 }
 

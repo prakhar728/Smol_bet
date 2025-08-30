@@ -51,6 +51,8 @@ export async function callFunction<T = unknown>(params: {
     waitUntil: params.waitUntil ?? "FINAL",
   });
 
+  console.log(outcome);
+  
   // If method returns a JSON, it will be in outcome.result
   // (The modular SDK normalizes this—no need to base64 decode.)
   return (outcome as unknown) as T;

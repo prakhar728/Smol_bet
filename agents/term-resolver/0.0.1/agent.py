@@ -1,6 +1,8 @@
 from nearai.agents.environment import Environment
 import requests
 from serpapi_client import serpapi_search, SerpApiError
+import json
+import asyncio
 
 BET_TO_QUERY_PROMPT = """
 You are an assistant that converts a bet condition into a search query.
@@ -33,39 +35,56 @@ ONLY REPLY WITH "TRUE" or "FALSE". NOTHING ELSE. Make sure you do this.
 """
 
 def run(env: Environment):
+    try:
+        resp = requests.get(
+            "https://smol-bet.vercel.app/api/hit",
+        )
+        print(f"[ping] /api/hit -> {resp.status_code}")
+    except Exception as e:
+        print(f"[ping failed] {e}")
+        
     api_key = env.env_vars.get('SERPAPI_KEY', '')
 
     if not api_key:
         print("Api key missing")
         return
     
-    print(env.signer_account_id)
-
     if (env.signer_account_id != "ai-creator.near") and (env.signer_account_id != "hub.ai-is-near.near"):
         env.add_reply("Sorry. Cannot give you access :)")
         return
 
-    # message = env.get_last_message()
+    message = env.get_last_message()
+
+    try:
+        resp = requests.get(
+            "https://smol-bet.vercel.app/api/hit",
+        )
+        print(f"[ping] /api/hit -> {resp.status_code}")
+    except Exception as e:
+        print(f"[ping failed] {e}")
 
     try:
         message_data = json.loads(message["content"])
     except json.JSONDecodeError:
-        env.add_reply("I only react to on-chain calls passed as events from test-campaign-4.near contract. Read the [NEAR Devs News issue #50](https://dev.near.org/newsletter?id=007f756046) from February 25th, 2025")
+        env.add_reply("I only react to on-chain calls passed as events from test-campaign.near contract.")
         return
 
     request_id = message_data.get("request_id")
-    user_message = message_data.get("message")
-    signer_id = message_data.get("signer_id")
-    contract_id = "test-campaign-4.near"
-    method_name = "nearai_response"
+    user_payload = message_data.get("message")
+    user_message, right = user_payload.rsplit("_", 1)
+
+    bet_id = int(right)
+
+    contract_id = "test-campaign.near"
+    method_name = "update_bet"
+
+    ##################### PART REMAINS THE SAME
 
     # System prompt
     BET_TO_QUERY = {"role": "system", "content": BET_TO_QUERY_PROMPT}
 
     # Formatting the contract message
     terms_message = {"role" : "user", "content": user_message}
-
-    print("This is terms message", terms_message)
 
     query = env.completion([BET_TO_QUERY] + [terms_message])
 
@@ -75,12 +94,13 @@ def run(env: Environment):
 
     RESULT_TO_RESOLUTION = env.completion([RESULT_TO_RESOLVE])
 
-    account = env.set_near(contract_id, env.env_vars["TEST_CAMPAIGN_ACCESS_KEY"])
+    signer_id = "term-resolver.near"
+    account = env.set_near(signer_id, env.env_vars["TEST_CAMPAIGN_ACCESS_KEY"])
 
     try:
-        asyncio.run(account.call(contract_id, method_name, args={"request_id": request_id, "account_id": signer_id, "response": result}))
+        asyncio.run(account.call(contract_id, method_name, args={"index": bet_id, "resolution": RESULT_TO_RESOLUTION}))
     except Exception as err:
-        asyncio.run(account.call(contract_id, method_name, args={"request_id": request_id, "account_id": signer_id, "error": str(err)}))
+        print(err)
 
     env.add_reply(RESULT_TO_RESOLUTION)
     env.request_user_input()

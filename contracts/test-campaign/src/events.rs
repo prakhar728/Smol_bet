@@ -1,6 +1,6 @@
 use near_sdk::{env, log};
 use near_sdk::serde::Serialize;
-use near_sdk::serde_json::json;
+use near_sdk::serde_json::{json, Value};
 
 #[derive(Serialize)]
 #[serde(crate = "near_sdk::serde")]
@@ -11,7 +11,6 @@ pub struct AgentData<'a> {
     pub request_id: Option<&'a str>,
     pub max_iterations: Option<u8>,
     pub thread_id: Option<&'a str>,
-
     pub signer_id: &'a str,
     pub referral_id: Option<&'a str>,
 
@@ -23,7 +22,7 @@ pub struct AgentData<'a> {
 pub fn log_event<T: Serialize>(event: &str, data: T) {
     let event = json!({
         "standard": "nearai",
-        "version": "0.1.0",
+        "version": "0.1.19",
         "event": event,
         "data": [data],
     });

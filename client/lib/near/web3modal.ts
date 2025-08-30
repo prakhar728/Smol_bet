@@ -1,19 +1,19 @@
 import { reconnect } from '@wagmi/core';
 import { createAppKit } from '@reown/appkit/react'
-import { nearTestnet } from '@reown/appkit/networks'
+import { near, nearTestnet } from '@reown/appkit/networks'
 import { WagmiAdapter } from '@reown/appkit-adapter-wagmi'
 
 const projectId = '5bb0fe33763b3bea40b8d69e4269b4ae';
 
 export const wagmiAdapter = new WagmiAdapter({
   projectId,
-  networks: [nearTestnet],
+  networks: [near],
 });
 
 export const web3Modal = createAppKit({
   adapters: [wagmiAdapter],
   projectId,
-  networks: [nearTestnet],
+  networks: [near],
   enableWalletConnect: true,
   features: {
     analytics: true,
