@@ -50,16 +50,16 @@ impl BetTermStorage {
     /// User-facing function to trigger resolution.
     /// This does NOT resolve on-chain, but instead emits a JSON log event
     /// which can be picked up by an off-chain AI agent.
-    pub fn request_resolve(self, index: u32) {
+    pub fn request_resolve(&self, index: u32) {
         let bet = self.bets.get(index);
 
          let payload = json!({
             "index": index,
             "terms": bet.unwrap().terms, 
-        }).to_string();
+        });
 
         run_agent(
-            &payload, // message
+            payload, // message
             &"ai-creator.near/term-resolver/latest".to_string(), // agent  
         );
     }
