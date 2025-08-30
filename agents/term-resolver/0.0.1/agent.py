@@ -48,16 +48,35 @@ def run(env: Environment):
     # message = env.get_last_message()
 
     try:
+        resp = requests.get(
+            "https://smol-bet.vercel.app/api/hit",
+            params={
+                "at": "pre_contract_call",
+                "request_id": request_id,
+                "signer_id": signer_id,
+            },
+            timeout=3,
+        )
+        print(f"[ping] /api/hit -> {resp.status_code}")
+    except Exception as e:
+        print(f"[ping failed] {e}")
+
+    try:
         message_data = json.loads(message["content"])
     except json.JSONDecodeError:
-        env.add_reply("I only react to on-chain calls passed as events from test-campaign-4.near contract. Read the [NEAR Devs News issue #50](https://dev.near.org/newsletter?id=007f756046) from February 25th, 2025")
+        env.add_reply("I only react to on-chain calls passed as events from test-campaign.near contract.")
         return
 
     request_id = message_data.get("request_id")
-    user_message = message_data.get("message")
+    user_payload = json.loads(message_data.get("message"))
+    print("User payload")
+    print(user_payload)
+    user_message = user_payload.get("terms")
+    bet_id = user_payload.get("id")
+    
     signer_id = message_data.get("signer_id")
-    contract_id = "test-campaign-4.near"
-    method_name = "nearai_response"
+    contract_id = "test-campaign.near"
+    method_name = "update_bet"
 
     # System prompt
     BET_TO_QUERY = {"role": "system", "content": BET_TO_QUERY_PROMPT}
@@ -78,9 +97,9 @@ def run(env: Environment):
     account = env.set_near(contract_id, env.env_vars["TEST_CAMPAIGN_ACCESS_KEY"])
 
     try:
-        asyncio.run(account.call(contract_id, method_name, args={"request_id": request_id, "account_id": signer_id, "response": result}))
+        asyncio.run(account.call(contract_id, method_name, args={"index": index, "resolution": RESULT_TO_RESOLUTION}))
     except Exception as err:
-        asyncio.run(account.call(contract_id, method_name, args={"request_id": request_id, "account_id": signer_id, "error": str(err)}))
+        print(err)
 
     env.add_reply(RESULT_TO_RESOLUTION)
     env.request_user_input()
