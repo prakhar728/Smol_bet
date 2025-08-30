@@ -40,7 +40,7 @@ export default function AICampaignPage() {
   const requestResolve = async (bet_id: number) => {
     setResolvingId(bet_id)
     console.log(bet_id);
-    
+
     const res = await callFunction({
       contractId: CONTRACT_ID,
       method: "request_resolve",
@@ -98,46 +98,21 @@ export default function AICampaignPage() {
             <h2 id="bets-heading" className="text-base md:text-lg font-semibold">
               Submitted Bets <span className="text-white/40 font-normal">({bets.length})</span>
             </h2>
-
-            {typeof hasMore !== "undefined" && hasMore && (
-              <Button
-                onClick={loadMore}
-                variant="ghost"
-                className="h-8 px-3 border border-white/15 hover:bg-white/10"
-                disabled={loading}
-              >
+            {hasMore && (
+              <Button onClick={loadMore} variant="ghost" className="h-8 px-3 border border-white/15 hover:bg-white/10" disabled={loading}>
                 {loading ? "Loading…" : "Load more"}
               </Button>
             )}
           </div>
 
-          {/* Empty state */}
-          {!loading && bets.length === 0 && (
+          {bets.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-white/15 bg-white/[0.03] p-8 text-center">
-              <p className="text-sm text-white/60">No bets yet — add your first above.</p>
+              <p className="text-sm text-white/60">{loading ? "Loading…" : "No bets yet — add your first above."}</p>
             </div>
-          )}
-
-          {/* Initial skeletons */}
-          {loading && bets.length === 0 && (
+          ) : (
             <ul className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <li key={i} className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
-                  <div className="animate-pulse space-y-3">
-                    <div className="h-4 w-24 bg-white/10 rounded" />
-                    <div className="h-4 w-3/4 bg-white/10 rounded" />
-                    <div className="h-4 w-2/3 bg-white/10 rounded" />
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-
-          {/* Bets grid */}
-          {bets.length > 0 && (
-            <ul className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
-              {bets.map((bet) => {
-                const resolved = !!bet.resolution;
+              {bets.map((bet: any) => {
+                const resolved = !!bet.resolution
                 return (
                   <li key={bet.bet_id} className="group">
                     <article className="h-full rounded-2xl border border-white/10 bg-white/[0.04] p-4 md:p-5 transition-transform duration-200 group-hover:-translate-y-0.5">
@@ -145,13 +120,15 @@ export default function AICampaignPage() {
                         <div className="text-xs md:text-sm text-white/70 font-mono">
                           #{bet.bet_id.toString().padStart(4, "0")}
                         </div>
-                        <span className={`text-[11px] rounded-md px-2 py-1 border ${resolved
-                            ? "border-emerald-400/30 text-emerald-300/90"
-                            : "border-white/15 text-white/60"
-                          }`}>
+                        <span className={`text-[11px] rounded-md px-2 py-1 border ${resolved ? "border-emerald-400/30 text-emerald-300/90" : "border-white/15 text-white/60"}`}>
                           {resolved ? "Resolved" : "Pending"}
                         </span>
                       </header>
+
+                      {/* NEW: show creator */}
+                      <div className="mt-1 text-xs text-white/50">
+                        by <span className="font-mono">{bet.creator}</span>
+                      </div>
 
                       <div className="mt-3 space-y-2">
                         <div>
@@ -179,7 +156,7 @@ export default function AICampaignPage() {
                       </div>
                     </article>
                   </li>
-                );
+                )
               })}
             </ul>
           )}
