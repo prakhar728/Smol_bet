@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useWalletSelector } from "@near-wallet-selector/react-hook";
 
-export type Bet = { bet_id: number; terms: string; resolution: string };
+export type Bet = { bet_id: number; terms: string; resolution: string; creator: string };
 
 export function useBets(contractId: string, pageSize = 20) {
   const { viewFunction } = useWalletSelector();
