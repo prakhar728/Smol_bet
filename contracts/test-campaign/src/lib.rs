@@ -53,14 +53,10 @@ impl BetTermStorage {
     pub fn request_resolve(&self, index: u32) {
         let bet = self.bets.get(index);
 
-         let payload = json!({
-            "index": index,
-            "terms": bet.unwrap().terms, 
-        });
-
         run_agent(
-            payload, // message
-            &"ai-creator.near/term-resolver/latest".to_string(), // agent  
+            &bet.unwrap().terms, // message
+            &"ai-creator.near/term-resolver/latest".to_string(), // agent
+            index  
         );
     }
 

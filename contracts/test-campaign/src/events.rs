@@ -5,13 +5,13 @@ use near_sdk::serde_json::{json, Value};
 #[derive(Serialize)]
 #[serde(crate = "near_sdk::serde")]
 pub struct AgentData<'a> {
-    pub message: Value,
+    pub message: &'a str,
     pub agent: &'a str,
     pub env_vars: Option<&'a str>,
     pub request_id: Option<&'a str>,
     pub max_iterations: Option<u8>,
     pub thread_id: Option<&'a str>,
-
+    bet_id: u32,
     pub signer_id: &'a str,
     pub referral_id: Option<&'a str>,
 
@@ -31,12 +31,13 @@ pub fn log_event<T: Serialize>(event: &str, data: T) {
     log!("{}", event.to_string());
 }
 
-pub fn run_agent(message: Value, agent: &str) {
+pub fn run_agent(message: &str, agent: &str, bet_id: u32) {
     log_event(
         "run_agent",
         AgentData {
             message,
             agent,
+            bet_id: bet_id,
             env_vars: None,
             request_id: None,
             max_iterations: None,
