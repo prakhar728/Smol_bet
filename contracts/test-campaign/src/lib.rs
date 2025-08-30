@@ -2,6 +2,7 @@
 use near_sdk::{near, AccountId, env, require};
 use near_sdk::store::Vector;
 use near_sdk::json_types::U64;
+use near_sdk::serde_json::json;
 // use near_sdk::test_utils::{VMContextBuilder, get_logs};
 mod events;
 use crate::events::run_agent;
@@ -52,8 +53,13 @@ impl BetTermStorage {
     pub fn request_resolve(self, index: u32) {
         let bet = self.bets.get(index);
 
+         let payload = json!({
+            "index": index,
+            "terms": bet.unwrap().terms, 
+        }).to_string();
+
         run_agent(
-            &bet.unwrap().terms, // message
+            &payload, // message
             &"ai-creator.near/term-resolver/latest".to_string(), // agent  
         );
     }
