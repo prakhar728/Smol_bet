@@ -29,11 +29,18 @@ export function SiteHeader() {
           >
             How it works
           </Link>
-       
+
         </nav>
-        <Button asChild className="bg-lime text-charcoal hover:bg-lime/90 focus-visible:ring-lime">
+        {/* <Button asChild className="bg-lime text-charcoal hover:bg-lime/90 focus-visible:ring-lime">
           <a href="https://x.com/funnyorfud" target="_blank" rel="noreferrer" aria-label="Try the Bot on X">
             Try the Bot
+            <ExternalLink className="ml-2 h-4 w-4" />
+          </a>
+        </Button> */}
+
+        <Button asChild className="bg-lime text-charcoal hover:bg-lime/90 focus-visible:ring-lime">
+          <a href="campaign" target="_blank" rel="noreferrer" aria-label="Try the Bot on X">
+            Live Campaign
             <ExternalLink className="ml-2 h-4 w-4" />
           </a>
         </Button>

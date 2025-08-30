@@ -5,6 +5,7 @@ import {
   runAgentAndWait,
 } from "../../lib/nearai/index";
 import type { NearBearer, ThreadMessage } from "../../lib/nearai/types";
+import { NEAR_SIGNED_AUTH } from "../config";
 
 const AUTH = NEAR_SIGNED_AUTH.trim() as NearBearer;
 
