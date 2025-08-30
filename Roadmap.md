@@ -16,18 +16,21 @@
 
 ---
 
-### **September**
+### **September** (Refined and Reviewed)
 #### **Week 1**
+- Build **whitelisting platform** to control access to the bot (Shifted to this month)
+- Invite early testers to interact, iterate, and report bugs  
 - Reiterate and improve **fault tolerance** — aim for **zero downtime** in core flow  
-- Refactor bet storage/recovery logic to ensure persistence after restarts  
+
 
 #### **Week 2**
+- Begin **R&D on NEAR AI Agent** for bet resolution  (Shifted to this month)
 - Integrate **MPC escrow contracts** on Base Sepolia  
 - Connect bot flow to create, accept, and resolve bets fully onchain  
 - Test **TEE + NEAR Shade Agent** end-to-end inside Phala TEE  
 
 #### **Week 3**
-- Conduct **closed beta with active CT/Farcaster users**  
+- Conduct **closed beta with active X users**  
 - Add analytics logging for bet creation, acceptance, and resolution  
 - Patch issues from tester feedback, improve error handling  
 
