@@ -2,7 +2,7 @@
 
 ### Create a new account
 ```bash
-ACCOUNT_NAME=test-campaign-9.testnet
+ACCOUNT_NAME=test-campaign-15.testnet
 near create-account $ACCOUNT_NAME  --useFaucet
 ```
 
@@ -10,6 +10,12 @@ near create-account $ACCOUNT_NAME  --useFaucet
 
 ```bash
 near deploy $ACCOUNT_NAME  ./target/near/test_campaign.wasm
+```
+
+### Test
+
+```bash
+cargo test -- --nocapture
 ```
 
 ### Example logs for test-campaign
@@ -56,4 +62,8 @@ near deploy $ACCOUNT_NAME  ./target/near/test_campaign.wasm
     }
   ]
 }
+```
+
+```bash
+{"data":[{"agent":"ai-creator.near/term-resolver/latest","env_vars":null,"max_iterations":null,"message":"foo-term_0","referral_id":null,"request_id":null,"signer_id":"alice.near","thread_id":null}],"event":"run_agent","standard":"nearai","version":"0.1.19"}
 ```

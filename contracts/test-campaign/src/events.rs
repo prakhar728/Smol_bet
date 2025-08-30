@@ -11,7 +11,6 @@ pub struct AgentData<'a> {
     pub request_id: Option<&'a str>,
     pub max_iterations: Option<u8>,
     pub thread_id: Option<&'a str>,
-    bet_id: u32,
     pub signer_id: &'a str,
     pub referral_id: Option<&'a str>,
 
@@ -28,16 +27,15 @@ pub fn log_event<T: Serialize>(event: &str, data: T) {
         "data": [data],
     });
 
-    log!("{}", event.to_string());
+    log!("EVENT_JSON:{}", event.to_string());
 }
 
-pub fn run_agent(message: &str, agent: &str, bet_id: u32) {
+pub fn run_agent(message: &str, agent: &str) {
     log_event(
         "run_agent",
         AgentData {
             message,
             agent,
-            bet_id: bet_id,
             env_vars: None,
             request_id: None,
             max_iterations: None,
