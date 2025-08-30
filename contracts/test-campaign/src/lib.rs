@@ -5,8 +5,8 @@ use near_sdk::json_types::U64;
 use near_sdk::serde_json::{json, Value};
 
 // test imports
-// use near_sdk::testing_env;
-// use near_sdk::test_utils::{VMContextBuilder, get_logs};
+use near_sdk::testing_env;
+use near_sdk::test_utils::{VMContextBuilder, get_logs};
 
 
 mod events;
@@ -70,7 +70,7 @@ impl BetTermStorage {
     pub fn update_bet(&mut self, index: u32, resolution: String) {
         let caller = env::predecessor_account_id();
 
-        require!(caller.as_str() == "term-resolver.near", "Only resolver can update");
+        require!(caller.to_string() == "term-resolver.near", "Only resolver can update");
 
         let mut bet = self.bets.get(index).expect("No bet at index").clone();
         bet.resolution = resolution;
@@ -154,10 +154,31 @@ mod tests {
     }
 
     #[test]
+    fn resolve_bet_updates_state() {
+        // creator adds bet and requests resolve (emits event)
+        let mut ctx = VMContextBuilder::new();
+        ctx.predecessor_account_id("term-resolver.near".parse().unwrap());
+        testing_env!(ctx.build());
+
+        let mut c = BetTermStorage::default();
+        c.add_bet("foo-term".to_string());
+        c.request_resolve(0);
+
+        // resolver updates the bet to TRUE
+        let mut ctx2 = VMContextBuilder::new();
+        ctx2.predecessor_account_id("term-resolver.near".parse().unwrap());
+        testing_env!(ctx2.build());
+
+        c.update_bet(0, "TRUE".to_string());
+        let b = c.get_bet(0).expect("bet should exist");
+        assert_eq!(b.resolution, "TRUE");
+    }
+
+    #[test]
     fn request_resolve_emits_event_and_we_can_read_it() {
         // set a predecessor so signer_id is populated
         let mut ctx = VMContextBuilder::new();
-        ctx.predecessor_account_id("alice.near".parse().unwrap());
+        ctx.predecessor_account_id("term-resolver.near".parse().unwrap());
         testing_env!(ctx.build());
 
         let mut c = BetTermStorage::default();
@@ -180,7 +201,7 @@ mod tests {
         assert_eq!(v["version"], "0.1.19"); // match your current version
         let d0 = &v["data"][0];
         assert_eq!(d0["agent"], "ai-creator.near/term-resolver/latest");
-        assert_eq!(d0["signer_id"], "alice.near");
+        assert_eq!(d0["signer_id"], "term-resolver.near");
 
         // if your message is "terms_index" per format!:
         assert_eq!(d0["message"], "foo-term_0");
