@@ -5,9 +5,10 @@ import "./globals.css";
 import Providers from "./providers";
 
 export const metadata: Metadata = {
-  title: "v0 App",
-  description: "Created with v0",
+  title: "Smol Bet",
+  description: "Decentralized betting dApp on NEAR",
   generator: "v0.dev",
+  keywords: ["NEAR", "betting", "AI", "dApp"], 
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

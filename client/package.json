@@ -13,6 +13,7 @@
     "@hookform/resolvers": "^3.9.1",
     "@near-wallet-selector/bitte-wallet": "^9.4.0",
     "@near-wallet-selector/core": "^9.4.0",
+    "@near-wallet-selector/intear-wallet": "^9.4.0",
     "@near-wallet-selector/ledger": "^9.4.0",
     "@near-wallet-selector/meteor-wallet": "^9.4.0",
     "@near-wallet-selector/modal-ui": "^9.4.0",
