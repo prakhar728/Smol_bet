@@ -69,7 +69,7 @@ impl BetTermStorage {
     pub fn update_bet(&mut self, index: u32, resolution: String) {
         let caller = env::predecessor_account_id();
 
-        require!(caller.as_str() == "term-resolver.testnet", "Only resolver can update");
+        require!(caller.as_str() == "term-resolver.near", "Only resolver can update");
 
         let mut bet = self.bets.get(index).expect("No bet at index").clone();
         bet.resolution = resolution;
