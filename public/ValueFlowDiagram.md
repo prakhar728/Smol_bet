@@ -1,4 +1,5 @@
 ```mermaid
+%%{ init: { 'theme': 'default', 'flowchart': { 'useMaxWidth': true, 'htmlLabels': true } , 'themeVariables': { 'fontSize': '16px' }, 'securityLevel': 'loose' } }
 flowchart LR
     %% --- Actors ---
     UA[Bettor A]
