@@ -23,8 +23,8 @@ type ClientDeps = {
  */
 export function buildProvider(network: NearEnv["NEAR_NETWORK"], urls?: string): Provider {
   const defaultUrls =
-    network === "mainnet"
-      ? ["https://rpc.mainnet.near.org", "https://free.rpc.fastnear.com"]
+    network === "mainnet" 
+      ? ["https://1rpc.io/near"]
       : ["https://rpc.testnet.near.org", "https://test.rpc.fastnear.com"];
 
   const list = (urls?.split(",").map(s => s.trim()).filter(Boolean) ?? defaultUrls)
