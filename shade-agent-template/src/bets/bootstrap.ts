@@ -4,6 +4,7 @@ import { startDepositsLoop } from "./handlers/deposits";
 import { startSettlementsLoop } from "./handlers/settlements";
 import { startSearchLoop } from "./services/search";
 import { isLoopRunning, setLoopRunning } from "./state";
+import { log } from "./lib/log";
 
 /**
  * Starts all loops exactly once.
@@ -17,6 +18,8 @@ export function startAll(): { started: boolean } {
   try {
     setLoopRunning(true);
 
+    log.debugger("Starting the loop!");
+    
     // kick off your long-running loops/intervals
     startRepliesLoop();
     startDepositsLoop();

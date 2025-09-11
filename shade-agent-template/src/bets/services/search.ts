@@ -7,12 +7,19 @@ import {
 } from "../state";
 import { searchRecent } from "../../lib/X/endpoints/xSearchRecent";
 import { xPost } from "../../lib/X/endpoints/xPost";
+import { log } from "../lib/log";
 
 export async function searchTwitter(): Promise<void> {
+
+    log.debugger("Starting searching X posts");
+
+
   // --- New bet discovery ---
   const startTime = new Date(lastSearchTimestamp * 1000).toISOString();
   const betPosts = await searchRecent(`@${BOT_NAME} "bet"`, undefined, startTime);
   let latest = lastSearchTimestamp;
+
+  log.info(`Found ${betPosts.length} posts for creating bet`);
 
   for (const p of betPosts ?? []) {
     const post = {
@@ -49,6 +56,7 @@ export async function searchTwitter(): Promise<void> {
   const settlePosts = await searchRecent(`@${BOT_NAME} "settle"`, undefined, startTime);
 
   for (const p of settlePosts ?? []) {
+    
     const post = {
       id: p.id,
       text: p.text,
