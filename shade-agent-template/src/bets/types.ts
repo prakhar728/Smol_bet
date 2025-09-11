@@ -4,7 +4,7 @@ export type Username = string;
 export interface Post {
   id: PostID;
   text: string;
-  author_username: Username;
+  author_username?: Username;
   conversation_id?: string;
   created_at?: string;
   replyAttempt?: number;
