@@ -1,6 +1,7 @@
 import { evm } from "../../utils/evm";
 import { sleep } from "../../utils/utils";
 import {
+  PUBLIC_CONTRACT_ID,
   REPLY_PROCESSING_DELAY,
 } from "../config";
 import {
@@ -9,7 +10,7 @@ import {
 } from "../state";
 import { xPost } from "../../lib/X/endpoints/xPost";
 import { parsePostToBet } from "../lib/nearai";
-import { generateAddress, networkId } from "../../lib/chain-signatures";
+import { generateAddress } from "../../lib/chain-signatures";
 import { log } from "../lib/log";
 
 export async function processReplies(): Promise<void> {
@@ -59,7 +60,7 @@ export async function processReplies(): Promise<void> {
 
     const authorBetPath = `${post.author_username}-${post.id}`;
     const { address: authorDepositAddress } = await generateAddress({
-      accountId: process.env.NEXT_PUBLIC_contractId!,
+      accountId: PUBLIC_CONTRACT_ID,
       path: authorBetPath,
       chain: "evm",
     });
@@ -68,7 +69,7 @@ export async function processReplies(): Promise<void> {
 
     const opponentBetPath = `${opponentUsername}-${post.id}`;
     const { address: opponentDepositAddress } = await generateAddress({
-      accountId: process.env.NEXT_PUBLIC_contractId!,
+      accountId: PUBLIC_CONTRACT_ID,
       path: opponentBetPath,
       chain: "evm",
     });
