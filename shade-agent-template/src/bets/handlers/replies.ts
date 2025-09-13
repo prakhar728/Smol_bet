@@ -1,4 +1,3 @@
-import { generateAddress, networkId } from "@neardefi/shade-agent-js";
 import { evm } from "../../utils/evm";
 import { sleep } from "../../utils/utils";
 import {
@@ -10,17 +9,19 @@ import {
 } from "../state";
 import { xPost } from "../../lib/X/endpoints/xPost";
 import { parsePostToBet } from "../lib/nearai";
+import { generateAddress, networkId } from "../../lib/chain-signatures";
+import { log } from "../lib/log";
 
 export async function processReplies(): Promise<void> {
   const post = pendingReply.shift() as
     | ({
-        id: string;
-        text: string;
-        author_username?: string;
-        conversation_id?: string;
-        created_at?: string;
-        replyAttempt: number;
-      } | undefined);
+      id: string;
+      text: string;
+      author_username?: string;
+      conversation_id?: string;
+      created_at?: string;
+      replyAttempt: number;
+    } | undefined);
 
   if (!post || post.replyAttempt >= 3) {
     await sleep(REPLY_PROCESSING_DELAY);
@@ -29,7 +30,7 @@ export async function processReplies(): Promise<void> {
 
   try {
     const betInfo = await parsePostToBet(post.text);
-
+    
     if (!betInfo || betInfo.includes("INVALID")) {
       await xPost(
         `Sorry, I couldn't understand the bet format. Please use: "@username I bet you X ETH that [condition]"`,
@@ -58,30 +59,30 @@ export async function processReplies(): Promise<void> {
 
     const authorBetPath = `${post.author_username}-${post.id}`;
     const { address: authorDepositAddress } = await generateAddress({
-      publicKey:
-        networkId === "testnet"
-          ? process.env.MPC_PUBLIC_KEY_TESTNET
-          : process.env.MPC_PUBLIC_KEY_MAINNET,
       accountId: process.env.NEXT_PUBLIC_contractId!,
       path: authorBetPath,
       chain: "evm",
     });
 
+    log.info(`Derived AuthDepositAddress: ${authorDepositAddress}`)
+
     const opponentBetPath = `${opponentUsername}-${post.id}`;
     const { address: opponentDepositAddress } = await generateAddress({
-      publicKey:
-        networkId === "testnet"
-          ? process.env.MPC_PUBLIC_KEY_TESTNET
-          : process.env.MPC_PUBLIC_KEY_MAINNET,
       accountId: process.env.NEXT_PUBLIC_contractId!,
       path: opponentBetPath,
       chain: "evm",
     });
 
+    log.info(`Derived OpponentDepositAddress: ${opponentDepositAddress}`)
+
     const response = await xPost(
       `I got you! \n @${post.author_username} deposit ${formattedStake} ETH to ${authorDepositAddress} \n and @${opponentUsername} deposit ${formattedStake} ETH to ${opponentDepositAddress}`,
       post.id,
     );
+
+    log.success("Replied successfully!");
+
+    log.success(response);
 
     if (response) {
       const conversationId = post.conversation_id || post.id;
@@ -106,6 +107,8 @@ export async function processReplies(): Promise<void> {
       };
 
       pendingDeposits.push(bet);
+
+      log.debugger("Bet adding to check for deposits!")
     } else {
       post.replyAttempt++;
       pendingReply.push(post);
@@ -115,6 +118,8 @@ export async function processReplies(): Promise<void> {
     post.replyAttempt++;
     pendingReply.push(post);
   }
+
+  log.info("Getting to sleep!");
 
   await sleep(REPLY_PROCESSING_DELAY);
   return void processReplies();
