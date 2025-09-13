@@ -1,3 +1,4 @@
+import { networkId } from "../lib/chain-signatures";
 
 // BOT CONFIGURATIONS
 export const BOT_NAME = process.env.BOT_NAME || "smol_bet";
@@ -13,6 +14,12 @@ export const POLLING_INTERVAL = 5 * 60 * 1000; // 5 minutes between search polls
 
 export const BASESCAN_API = (networkId: string) =>
   `https://api${networkId === "testnet" ? "-sepolia" : ""}.basescan.org/api`;
+
+export const ETHERSCAN_API = process.env.ETHERSCAN_API || "";
+
+export const PUBLIC_CONTRACT_ID = process.env.NEXT_PUBLIC_contractId!;
+
+export const CHAIN_ID = (networkId == "mainnet") ? 8453 : 84532;
 
 export const FAKE_REPLY = process.env.FAKE_REPLY === "true";
 export const SEARCH_ONLY = process.env.SEARCH_ONLY === "true";

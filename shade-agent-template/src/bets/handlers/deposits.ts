@@ -5,6 +5,8 @@ import {
   DEPOSIT_PROCESSING_DELAY,
   MAX_DEPOSIT_ATTEMPTS,
   BOT_NAME,
+  CHAIN_ID,
+  PUBLIC_CONTRACT_ID,
 } from "../config";
 import {
   pendingDeposits,
@@ -47,13 +49,13 @@ export async function processDeposits(): Promise<void> {
 
         log.info(balance1 >= bet.stake);
         log.info(balance2 >= bet.stake);
-        let tx = await getTransactionsForAddress(bet.authorDepositAddress);
+        let tx = await getTransactionsForAddress(bet.authorDepositAddress, CHAIN_ID);
 
         console.log(tx);
         
         const creatorAddress = tx?.from;
 
-        tx = await getTransactionsForAddress(bet.opponentDepositAddress);
+        tx = await getTransactionsForAddress(bet.opponentDepositAddress, CHAIN_ID);
         const opponentAddress = tx?.from;
 
         if (creatorAddress && opponentAddress) {
@@ -75,11 +77,7 @@ export async function processDeposits(): Promise<void> {
 
     const betPath = `${bet.creatorUsername}-${bet.opponentUsername}-${bet.id}`;
     const { address: resolverAddress } = await generateAddress({
-      publicKey:
-        networkId === "testnet"
-          ? process.env.MPC_PUBLIC_KEY_TESTNET
-          : process.env.MPC_PUBLIC_KEY_MAINNET,
-      accountId: process.env.NEXT_PUBLIC_contractId!,
+      accountId: PUBLIC_CONTRACT_ID,
       path: betPath,
       chain: "evm",
     });
