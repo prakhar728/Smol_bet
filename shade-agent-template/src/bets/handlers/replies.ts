@@ -30,7 +30,7 @@ export async function processReplies(): Promise<void> {
 
   try {
     const betInfo = await parsePostToBet(post.text);
-
+    
     if (!betInfo || betInfo.includes("INVALID")) {
       await xPost(
         `Sorry, I couldn't understand the bet format. Please use: "@username I bet you X ETH that [condition]"`,
@@ -80,6 +80,10 @@ export async function processReplies(): Promise<void> {
       post.id,
     );
 
+    log.success("Replied successfully!");
+
+    log.success(response);
+
     if (response) {
       const conversationId = post.conversation_id || post.id;
 
@@ -103,6 +107,8 @@ export async function processReplies(): Promise<void> {
       };
 
       pendingDeposits.push(bet);
+
+      log.debugger("Bet adding to check for deposits!")
     } else {
       post.replyAttempt++;
       pendingReply.push(post);
@@ -112,6 +118,8 @@ export async function processReplies(): Promise<void> {
     post.replyAttempt++;
     pendingReply.push(post);
   }
+
+  log.info("Getting to sleep!");
 
   await sleep(REPLY_PROCESSING_DELAY);
   return void processReplies();
