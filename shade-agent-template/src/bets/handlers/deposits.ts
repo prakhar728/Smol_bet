@@ -1,4 +1,3 @@
-import { generateAddress, networkId } from "@neardefi/shade-agent-js";
 import { evm } from "../../utils/evm";
 import { sleep } from "../../utils/utils";
 import {
@@ -17,6 +16,7 @@ import { getTransactionsForAddress } from "../services/explorer";
 import { createBetInContract } from "../services/contract";
 import { xPost } from "../../lib/X/endpoints/xPost";
 import { log } from "../lib/log";
+import { generateAddress } from "../../lib/chain-signatures";
 
 export async function processDeposits(): Promise<void> {
   const bet = pendingDeposits.shift(); 
