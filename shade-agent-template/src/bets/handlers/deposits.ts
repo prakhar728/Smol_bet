@@ -1,4 +1,3 @@
-import { generateAddress, networkId } from "@neardefi/shade-agent-js";
 import { evm } from "../../utils/evm";
 import { sleep } from "../../utils/utils";
 import {
@@ -17,6 +16,7 @@ import { getTransactionsForAddress } from "../services/explorer";
 import { createBetInContract } from "../services/contract";
 import { xPost } from "../../lib/X/endpoints/xPost";
 import { log } from "../lib/log";
+import { generateAddress } from "../../lib/chain-signatures";
 
 export async function processDeposits(): Promise<void> {
   const bet = pendingDeposits.shift(); 
@@ -75,12 +75,15 @@ export async function processDeposits(): Promise<void> {
   if (totalDeposited) {
     log.success("Full amount deposited → create bet in contract");
 
-    const betPath = `${bet.creatorUsername}-${bet.opponentUsername}-${bet.id}`;
+    const betPath = `ethereum-2`;
     const { address: resolverAddress } = await generateAddress({
       accountId: PUBLIC_CONTRACT_ID,
       path: betPath,
       chain: "evm",
     });
+
+    console.log("Resolver address", resolverAddress);
+    
 
     bet.resolverAddress = resolverAddress;
     bet.betPath = betPath;
@@ -91,6 +94,7 @@ export async function processDeposits(): Promise<void> {
       resolverAddress: bet.resolverAddress || "0x0",
       creatorBetPath: bet.authorBetPath,
       opponentBetPath: bet.opponentBetPath,
+      individualStake: bet.stake
     });
 
     if (!transferResult.success) {
