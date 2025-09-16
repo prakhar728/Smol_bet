@@ -1,10 +1,10 @@
 import { ethers, Log } from "ethers";
-import {
-  networkId,
-  contractCall,
-  parseNearAmount,
-} from "@neardefi/shade-agent-js";
 import BET_ESCROW_CONTRACT from "../assets/BetEscrow.json";
+import { networkId } from "../lib/chain-signatures";
+import { Evm } from "./ethereum";
+import { requestSignature, contractCall } from "@neardefi/shade-agent-js";
+import { utils } from "chainsig.js";
+const { toRSV, uint8ArrayToHex } = utils.cryptography;
 
 // BetEscrow contract address
 const BET_ESCROW_ADDRESS = {
@@ -65,6 +65,7 @@ interface TransferDepositsToResolverParams {
   resolverAddress: string;
   creatorBetPath: string;
   opponentBetPath: string;
+  individualStake: bigint;
 }
 
 export const evm = {
@@ -286,12 +287,9 @@ export const evm = {
         const safetyBuffer = 5000000000000n; // 0.000005 ETH buffer
 
         // If amount is 0n, send the entire balance minus gas and buffer
-        const valueToSend =
-          amount === 0n
-            ? balance > gasFee + safetyBuffer
-              ? balance - gasFee - safetyBuffer
-              : 0n
-            : amount;
+        console.log("Amount to send is", amount);
+        
+        const valueToSend = amount;
 
         if (valueToSend <= 0n) {
           console.log(
@@ -327,16 +325,37 @@ export const evm = {
           )} ETH from ${from} to ${toAddress}`
         );
 
-        // Execute the transaction
-        const result = await evm.completeEthereumTx({ baseTx, path });
-        results.push({
-          success: !!result.success,
-          from,
-          hash: result.hash,
-          explorerLink: result.explorerLink,
-          amount: valueToSend,
-          error: result.error ? String(result.error) : undefined,
+        const { transaction, hashesToSign } = await Evm.prepareTransactionForSigning({
+          from: from,
+          to: toAddress,
+          value: valueToSend,
+          data: "0x",
         });
+
+        const signRes = await requestSignature({
+          path: path,
+          payload: uint8ArrayToHex(hashesToSign[0]),
+        });
+        console.log("signRes", signRes);
+
+        const signedTransaction = Evm.finalizeTransactionSigning({
+          transaction,
+          rsvSignatures: [toRSV(signRes)],
+        });
+
+
+        const txHash = await Evm.broadcastTx(signedTransaction);
+
+        console.log(({
+          txHash: txHash.hash
+        }));
+
+        if (txHash) {
+          return {
+            success: true,
+            transfers: []
+          }
+        }
 
         // Add a small delay between transactions
         await sleep(2000);
@@ -362,6 +381,7 @@ export const evm = {
     resolverAddress,
     creatorBetPath,
     opponentBetPath,
+    individualStake,
   }: TransferDepositsToResolverParams): Promise<TransferOperationResult> => {
     if (!creatorDepositAddress || !opponentDepositAddress || !resolverAddress) {
       console.error("Missing required addresses");
@@ -378,7 +398,7 @@ export const evm = {
       fromAddresses: [creatorDepositAddress, opponentDepositAddress],
       toAddress: resolverAddress,
       paths: [creatorBetPath, opponentBetPath],
-      amounts: [0n, 0n],
+      amounts: [individualStake, individualStake],
       gasLimit: 30000n, // Slightly higher gas limit for safety
     });
   },

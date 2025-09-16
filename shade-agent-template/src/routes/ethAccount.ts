@@ -10,7 +10,7 @@ app.get("/", async (c) => {
     // Derive the price pusher Ethereum address
     const { address: senderAddress } = await Evm.deriveAddressAndPublicKey(
       contractId,
-      "ethereum-1",
+      "ethereum-2",
     );
 
     // Get the balance of the address

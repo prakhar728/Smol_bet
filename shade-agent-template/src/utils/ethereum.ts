@@ -1,7 +1,8 @@
 import { contracts, chainAdapters } from "chainsig.js";
 import { createPublicClient, http } from "viem";
+import { baseSepolia } from "viem/chains";
 
-export const ethRpcUrl = "https://sepolia.drpc.org";
+export const ethRpcUrl = "https://base-sepolia-rpc.publicnode.com";
 export const ethContractAddress = "0xb8d9b079F1604e9016137511464A1Fe97F8e2Bd8";
 
 export const ethContractAbi = [
@@ -41,6 +42,7 @@ const MPC_CONTRACT = new contracts.ChainSignatureContract({
 
 // Set up a public client for the Ethereum network
 const publicClient = createPublicClient({
+  chain: baseSepolia,
   transport: http(ethRpcUrl),
 });
 
