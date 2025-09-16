@@ -110,15 +110,8 @@ export const evm = {
       const betEscrowInterface = new ethers.Interface(BET_ESCROW_ABI);
 
       // Get provider and prepare transaction
-      const provider = getProvider();
 
       console.log("Creating bet with creator", creator);
-
-      // Get the network's current values
-      const [nonce, feeData] = await Promise.all([
-        provider.getTransactionCount(creator),
-        provider.getFeeData(),
-      ]);
 
       // Encode function call - note the stake is passed as value, not a parameter
       const data = betEscrowInterface.encodeFunctionData("createBet", [
@@ -128,20 +121,37 @@ export const evm = {
         resolver || ethers.ZeroAddress,
       ]);
 
-      // Build transaction
-      const baseTx = {
-        to: BET_ESCROW_ADDRESS[networkId],
+      console.log("stake amount", stake);
+      
+      const { transaction, hashesToSign } = await Evm.prepareTransactionForSigning({
+        from: resolver,
+        to: BET_ESCROW_ADDRESS.testnet,
+        value: stake,
         data,
-        nonce,
-        chainId: evm.chainId,
-        type: 2, // EIP-1559 transaction
-        maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
-        maxFeePerGas: feeData.maxFeePerGas,
-        gasLimit: 400000n, // Increase gas limit for safety
-        value: stake, // Total stake amount to be sent
+      });
+
+      // Call the agent contract to get a signature for the payload
+      const signRes = await requestSignature({
+        path: path,
+        payload: uint8ArrayToHex(hashesToSign[0]),
+      });
+
+      // Reconstruct the signed transaction
+      const signedTransaction = Evm.finalizeTransactionSigning({
+        transaction,
+        rsvSignatures: [toRSV(signRes)],
+      });
+
+      // Broadcast the signed transaction
+      const txHash = await Evm.broadcastTx(signedTransaction);
+
+      // Send back both the txHash and the new price optimistically
+      return {
+        success: true,
+        hash: txHash.hash,
+        explorerLink: `${evm.explorer}/tx/${txHash.hash}`,
       };
 
-      return await evm.completeEthereumTx({ baseTx, path });
     } catch (error) {
       console.error("Error in creating bet:", error);
       return {
@@ -238,7 +248,6 @@ export const evm = {
     toAddress,
     paths,
     amounts,
-    gasLimit = 21000n,
   }: TransferFromAndToParams): Promise<TransferOperationResult> => {
     if (!fromAddresses || !Array.isArray(fromAddresses) || !toAddress) {
       console.error("Must provide fromAddresses array and toAddress");
@@ -264,7 +273,6 @@ export const evm = {
     }
 
     const provider = getProvider();
-    const feeData = await provider.getFeeData();
     const results: TransferResult[] = [];
 
     // Process each transfer sequentially
@@ -278,17 +286,6 @@ export const evm = {
         const balance = await provider.getBalance(from);
         console.log(`Balance of ${from}: ${ethers.formatEther(balance)} ETH`);
 
-        // Calculate gas costs
-        const gasFee =
-          gasLimit * (feeData.maxFeePerGas || 0n) +
-          (feeData.maxPriorityFeePerGas || 0n);
-
-        // Calculate amount to send (balance - gas fee with a small buffer for fluctuations)
-        const safetyBuffer = 5000000000000n; // 0.000005 ETH buffer
-
-        // If amount is 0n, send the entire balance minus gas and buffer
-        console.log("Amount to send is", amount);
-        
         const valueToSend = amount;
 
         if (valueToSend <= 0n) {
@@ -302,22 +299,6 @@ export const evm = {
           });
           continue;
         }
-
-        // Get nonce for the sending address
-        const nonce = await provider.getTransactionCount(from);
-
-        // Create transaction object
-        const baseTx = {
-          to: toAddress,
-          nonce,
-          value: valueToSend,
-          gasLimit,
-          type: 2,
-          maxPriorityFeePerGas: feeData.maxPriorityFeePerGas || 0n,
-          maxFeePerGas: feeData.maxFeePerGas || 0n,
-          chainId: evm.chainId,
-          data: "0x", // Empty data for a simple ETH transfer
-        };
 
         console.log(
           `Transferring ${ethers.formatEther(
@@ -336,7 +317,6 @@ export const evm = {
           path: path,
           payload: uint8ArrayToHex(hashesToSign[0]),
         });
-        console.log("signRes", signRes);
 
         const signedTransaction = Evm.finalizeTransactionSigning({
           transaction,
@@ -345,10 +325,6 @@ export const evm = {
 
 
         const txHash = await Evm.broadcastTx(signedTransaction);
-
-        console.log(({
-          txHash: txHash.hash
-        }));
 
         if (txHash) {
           return {

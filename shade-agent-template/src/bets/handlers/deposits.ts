@@ -50,8 +50,6 @@ export async function processDeposits(): Promise<void> {
         log.info(balance1 >= bet.stake);
         log.info(balance2 >= bet.stake);
         let tx = await getTransactionsForAddress(bet.authorDepositAddress, CHAIN_ID);
-
-        console.log(tx);
         
         const creatorAddress = tx?.from;
 
@@ -117,6 +115,8 @@ export async function processDeposits(): Promise<void> {
     if (betResult.success) {
       bet.betId = betResult.betId;
 
+      console.log("Bet created");
+      
       await xPost(
         `Bet created!
         \n\nBet between @${bet.creatorUsername} and @${bet.opponentUsername} is now active!
