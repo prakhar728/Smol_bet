@@ -327,10 +327,11 @@ export const evm = {
         const txHash = await Evm.broadcastTx(signedTransaction);
 
         if (txHash) {
-          return {
+          results.push({
             success: true,
-            transfers: []
-          }
+            from: from,
+            hash: txHash,
+          })
         }
 
         // Add a small delay between transactions
