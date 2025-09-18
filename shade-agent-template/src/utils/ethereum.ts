@@ -41,7 +41,7 @@ const MPC_CONTRACT = new contracts.ChainSignatureContract({
 });
 
 // Set up a public client for the Ethereum network
-const publicClient = createPublicClient({
+export const publicClient = createPublicClient({
   chain: baseSepolia,
   transport: http(ethRpcUrl),
 });

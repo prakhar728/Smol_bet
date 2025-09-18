@@ -115,6 +115,8 @@ export async function processDeposits(): Promise<void> {
     if (betResult.success) {
       bet.betId = betResult.betId;
       
+      console.log("BetId is ", betResult.betId);
+      
       await xPost(
         `Bet created!
         \n\nBet between @${bet.creatorUsername} and @${bet.opponentUsername} is now active!
