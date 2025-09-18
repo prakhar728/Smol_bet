@@ -16,7 +16,7 @@ export async function searchTwitter(): Promise<void> {
 
   // --- New bet discovery ---
   const startTime = new Date(lastSearchTimestamp * 1000).toISOString();
-  const betPosts = await searchRecent(`@${BOT_NAME} "bet"`, undefined, startTime);
+  const betPosts = await searchRecent(`@${BOT_NAME} "bet"  -settle`, undefined, startTime);
   let latest = lastSearchTimestamp;
 
   log.info(`Found ${betPosts.length} posts for creating bet`);
@@ -36,6 +36,13 @@ export async function searchTwitter(): Promise<void> {
     };
 
     const ts = post.created_at ? Date.parse(post.created_at) / 1000 : Math.floor(Date.now() / 1000);
+
+    // attach to most recent active bet for this user
+    const idx = pendingSettlement.findIndex(
+      b => b.conversationId === post.conversation_id
+    );
+
+    if (idx >= 0) continue;
 
     if (ts <= lastSearchTimestamp)
       continue;
@@ -60,6 +67,9 @@ export async function searchTwitter(): Promise<void> {
 
   for (const p of settlePosts ?? []) {
 
+    if (p.author_username == BOT_NAME)
+      continue;
+
     const post = {
       id: p.id,
       text: p.text,
@@ -83,16 +93,10 @@ export async function searchTwitter(): Promise<void> {
 
     // attach to most recent active bet for this user
     const idx = pendingSettlement.findIndex(
-      b => b.creatorUsername === post.author_username || b.opponentUsername === post.author_username
+      b => b.conversationId === post.conversation_id
     );
 
-    console.log("The post that needs to be settled is", pendingSettlement.findIndex(
-      b => b.conversationId === post.conversation_id
-    ));
-    
-
     console.log("Idx is", idx);
-    
 
     if (idx >= 0) {
       const bet = pendingSettlement[idx];
