@@ -8,7 +8,7 @@ app.get("/", async (c) => {
     try {
 
         const result = await evm.resolveBetTx({ 
-            betId: "26", 
+            betId: "23", 
             winner: "0x90f6797C18dF84b5D0cFA110F57D4eCB4Afa37Ed", 
             resolverAddress: "0xC36836075F161891Abf4E2D737513D2Af9B141a5", 
             path: "ethereum-2" 
