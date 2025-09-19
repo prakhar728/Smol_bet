@@ -1,9 +1,10 @@
 import { ethers, Log } from "ethers";
 import BET_ESCROW_CONTRACT from "../assets/BetEscrow.json";
-import { networkId } from "../lib/chain-signatures";
-import { Evm } from "./ethereum";
+import { generateAddress, networkId } from "../lib/chain-signatures";
+import { Evm, publicClient } from "./ethereum";
 import { requestSignature, contractCall } from "@neardefi/shade-agent-js";
 import { utils } from "chainsig.js";
+import { PUBLIC_CONTRACT_ID } from "../bets/config";
 const { toRSV, uint8ArrayToHex } = utils.cryptography;
 
 // BetEscrow contract address
@@ -110,7 +111,6 @@ export const evm = {
       const betEscrowInterface = new ethers.Interface(BET_ESCROW_ABI);
 
       // Get provider and prepare transaction
-
       console.log("Creating bet with creator", creator);
 
       // Encode function call - note the stake is passed as value, not a parameter
@@ -121,8 +121,9 @@ export const evm = {
         resolver || ethers.ZeroAddress,
       ]);
 
-      console.log("stake amount", stake);
-      
+      console.log("resolverAddress", resolver);
+      console.log("resolver path", path);
+
       const { transaction, hashesToSign } = await Evm.prepareTransactionForSigning({
         from: resolver,
         to: BET_ESCROW_ADDRESS.testnet,
@@ -167,35 +168,41 @@ export const evm = {
       // Create contract interface
       const betEscrowInterface = new ethers.Interface(BET_ESCROW_ABI);
 
-      // Get provider and prepare transaction
-      const provider = getProvider();
-
-      // Get the network's current values
-      const [nonce, feeData] = await Promise.all([
-        provider.getTransactionCount(resolverAddress),
-        provider.getFeeData(),
-      ]);
-
       // Encode function call
       const data = betEscrowInterface.encodeFunctionData("resolveBet", [
         betId,
         winner,
       ]);
 
-      // Build transaction
-      const baseTx = {
-        to: BET_ESCROW_ADDRESS[networkId],
+      const { transaction, hashesToSign } = await Evm.prepareTransactionForSigning({
+        to: BET_ESCROW_ADDRESS.testnet,
+        value: 0,
         data,
-        nonce,
-        chainId: evm.chainId,
-        type: 2, // EIP-1559 transaction
-        maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
-        maxFeePerGas: feeData.maxFeePerGas,
-        gasLimit: 300000n, // Gas limit for resolving
-        value: 0n, // No ETH sent for resolution
-      };
+        from: resolverAddress as `0x${string}`,
+        account: resolverAddress as `0x${string}`
+      });
 
-      return await evm.completeEthereumTx({ baseTx, path });
+      // Call the agent contract to get a signature for the payload
+      const signRes = await requestSignature({
+        path: path,
+        payload: uint8ArrayToHex(hashesToSign[0]),
+      });
+
+      // Reconstruct the signed transaction
+      const signedTransaction = Evm.finalizeTransactionSigning({
+        transaction,
+        rsvSignatures: [toRSV(signRes)],
+      });
+
+      // Broadcast the signed transaction
+      const txHash = await Evm.broadcastTx(signedTransaction);
+
+      // Send back both the txHash and the new price optimistically
+      return {
+        success: true,
+        hash: txHash.hash,
+        explorerLink: `${evm.explorer}/tx/${txHash.hash}`,
+      };
     } catch (error) {
       console.error("Error in resolving bet:", error);
       return {
@@ -327,10 +334,11 @@ export const evm = {
         const txHash = await Evm.broadcastTx(signedTransaction);
 
         if (txHash) {
-          return {
+          results.push({
             success: true,
-            transfers: []
-          }
+            from: from,
+            hash: txHash,
+          })
         }
 
         // Add a small delay between transactions

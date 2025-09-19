@@ -11,7 +11,7 @@ export const acknowledgedPosts = new Set<string>();
 
 export let lastSearchTimestamp =
   parseInt(process.env.LAST_SEARCH_TIMESTAMP ?? "", 10) ||
-  Math.floor(Date.now() / 1000) - (86400 * 3);
+  Math.floor(Date.now() / 1000) - (86400);
 
 export let lastSettleBetSeachTimestamp =
   parseInt(process.env.LAST_SEARCH_TIMESTAMP ?? "", 10) ||

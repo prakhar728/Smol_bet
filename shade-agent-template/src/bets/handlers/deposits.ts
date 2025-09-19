@@ -114,8 +114,8 @@ export async function processDeposits(): Promise<void> {
 
     if (betResult.success) {
       bet.betId = betResult.betId;
-
-      console.log("Bet created");
+      
+      console.log("BetId is ", betResult.betId);
       
       await xPost(
         `Bet created!
