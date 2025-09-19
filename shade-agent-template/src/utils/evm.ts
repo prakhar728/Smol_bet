@@ -168,44 +168,19 @@ export const evm = {
       // Create contract interface
       const betEscrowInterface = new ethers.Interface(BET_ESCROW_ABI);
 
-      console.log(betId, winner);
-
-
       // Encode function call
       const data = betEscrowInterface.encodeFunctionData("resolveBet", [
         betId,
         winner,
       ]);
 
-      console.log("resolverAddress", resolverAddress);
-      console.log("resolver path", path);
-
-      const provider = getProvider();
-
-      const [feeData] = await Promise.all([
-        provider.getFeeData(),
-      ]);
-
-      const gas = await publicClient.estimateGas({
-        account: resolverAddress,    // REQUIRED: msg.sender for sim
-        to: BET_ESCROW_ADDRESS.testnet as `0x${string}`,
-        data: data as `0x${string}`,               // calldata
-        value: 0n,                         // if sending ETH
-      });
-      // optionally add a safety buffer, e.g. 20%
-      const gasLimit = (gas * 120n) / 100n;
-
       const { transaction, hashesToSign } = await Evm.prepareTransactionForSigning({
         to: BET_ESCROW_ADDRESS.testnet,
         value: 0,
         data,
-        maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
-        maxFeePerGas: feeData.maxFeePerGas,
-        gasLimit: 300000n, // Gas limit for resolving
         from: resolverAddress as `0x${string}`,
+        account: resolverAddress as `0x${string}`
       });
-
-      console.log("HERE");
 
       // Call the agent contract to get a signature for the payload
       const signRes = await requestSignature({
