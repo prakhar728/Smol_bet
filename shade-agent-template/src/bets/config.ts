@@ -19,6 +19,8 @@ export const ETHERSCAN_API = process.env.ETHERSCAN_API || "";
 
 export const PUBLIC_CONTRACT_ID = process.env.NEXT_PUBLIC_contractId!;
 
+export const STORAGE_CONTRACT_ID = process.env.STORAGE_CONTRACT_ID;
+
 export const CHAIN_ID = (networkId == "mainnet") ? 8453 : 84532;
 
 export const FAKE_REPLY = process.env.FAKE_REPLY === "true";
