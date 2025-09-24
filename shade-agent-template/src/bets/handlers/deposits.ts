@@ -6,6 +6,7 @@ import {
   BOT_NAME,
   CHAIN_ID,
   PUBLIC_CONTRACT_ID,
+  STORAGE_CONTRACT_ID,
 } from "../config";
 import {
   pendingDeposits,
@@ -17,6 +18,7 @@ import { createBetInContract } from "../services/contract";
 import { xPost } from "../../lib/X/endpoints/xPost";
 import { log } from "../lib/log";
 import { generateAddress } from "../../lib/chain-signatures";
+import { callFunction } from "../../lib/near/functions";
 
 export async function processDeposits(): Promise<void> {
   const bet = pendingDeposits.shift(); 
@@ -124,6 +126,27 @@ export async function processDeposits(): Promise<void> {
         \n\nEither party can trigger settlement by tagging @${BOT_NAME} with "settle bet"`,
         bet.mostRecentTweetId,
       );
+
+
+      const formattedBet = {
+        initiator: bet.creatorAddress,
+        opponent: bet.opponentAddress,
+        chain: "base sepolia",
+        terms: bet.description,
+        currency: "ETH",
+        amount: bet.stake.toString(),
+        parentid: bet.conversationId,
+        currentid: bet.id,
+        remarks: "Early bet tests",
+      };
+
+      await callFunction({
+          contractId: STORAGE_CONTRACT_ID,
+          methodName: "add_bet",
+          args: formattedBet,
+          gasTGas: 50,        // simple write
+          waitUntil: "FINAL",
+        });
 
       pendingSettlement.push(bet);
     } else {
