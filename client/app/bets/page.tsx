@@ -4,25 +4,9 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import { useWalletSelector } from "@near-wallet-selector/react-hook"
 import { Button } from "@/components/ui/button"
 import { ConnectWalletButton } from "@/components/campaign/ConnectWalletButton"
-
-type Bet = {
-  bet_id: number
-  terms: string
-  initiator?: string | null
-  opponent?: string | null
-  amount?: string | null
-  currency?: string | null
-  chain?: string | null
-  betstatus?: string | null
-  currentid?: string | null
-  parentid?: string | null
-  remarks?: string | null
-  resolution?: string | null
-}
-
-const STORAGE_CONTRACT_ID =
-  process.env.NEXT_PUBLIC_STORAGE_CONTRACT || "storage-contract-7.testnet"
-const PAGE_SIZE = 30
+import SkeletonGrid from "@/components/bets/SkeletonGrid"
+import type { Bet } from "@/types/types"
+import { normalizeBet, PAGE_SIZE, STORAGE_CONTRACT_ID, parseTotal } from "@/lib/bets"
 
 export default function ShowcaseBets() {
   const { signedAccountId, viewFunction } = useWalletSelector()
@@ -47,11 +31,12 @@ export default function ShowcaseBets() {
       setLoading(true)
       setError(null)
       try {
-        const t = await viewFunction({
+        const totalRaw = await viewFunction({
           contractId: STORAGE_CONTRACT_ID,
-          method: "total_bets",
+          method: "total_bets",             // <-- method (not methodName)
         })
         if (cancelled) return
+        const t = parseTotal(totalRaw)
         setTotal(t)
 
         // detect get_bets support
@@ -61,9 +46,10 @@ export default function ShowcaseBets() {
             method: "get_bets",
             args: { from_index: 0, limit: Math.min(PAGE_SIZE, Math.max(1, t)) },
           })
-          if (!cancelled) setSupportsRange(Array.isArray(probe))
-          if (!cancelled && Array.isArray(probe)) {
-            const normalized = probe.map((raw, i) => normalizeBet(raw, i + 1))
+          const probeIsArray = Array.isArray(probe)
+          if (!cancelled) setSupportsRange(probeIsArray)
+          if (!cancelled && probeIsArray) {
+            const normalized = (probe as any[]).map((raw, i) => normalizeBet(raw, i + 1))
             setBets(normalized)
             nextIndexRef.current = normalized.length
           }
@@ -97,7 +83,8 @@ export default function ShowcaseBets() {
           method: "get_bets",
           args: { from_index, limit },
         })
-        const normalized = (chunk || []).map((raw, i) => normalizeBet(raw, from_index + i + 1))
+        const arr = Array.isArray(chunk) ? chunk : []
+        const normalized = arr.map((raw, i) => normalizeBet(raw, from_index + i + 1))
         setBets((prev) => [...prev, ...normalized])
         nextIndexRef.current = from_index + normalized.length
       } else {
@@ -111,8 +98,8 @@ export default function ShowcaseBets() {
             try {
               const b = await viewFunction({
                 contractId: STORAGE_CONTRACT_ID,
-                method: "get_bet",
-                args: { index: idx }, // change to idx + 1 if your contract is 1-based
+                method: "get_bet",          // <-- method (not methodName)
+                args: { index: idx },       // change to idx + 1 if your contract is 1-based
               })
               return b ?? null
             } catch {
@@ -120,9 +107,7 @@ export default function ShowcaseBets() {
             }
           })
         )
-        const normalized = chunk
-          .filter(Boolean)
-          .map((raw, i) => normalizeBet(raw as any, start + i + 1))
+        const normalized = chunk.filter(Boolean).map((raw, i) => normalizeBet(raw as any, start + i + 1))
         setBets((prev) => [...prev, ...normalized])
       }
     } catch (e: any) {
@@ -140,6 +125,7 @@ export default function ShowcaseBets() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, supportsRange, total])
 
+  // requirement: show empty state if wallet not connected OR no bets
   const showEmpty = !loading && (bets.length === 0 || !signedAccountId)
 
   return (
@@ -164,7 +150,6 @@ export default function ShowcaseBets() {
           </div>
         )}
 
-        {/* Wallet/empty callout */}
         {showEmpty ? (
           <div className="rounded-2xl border border-dashed border-white/15 bg-white/[0.03] p-8 text-center">
             {!signedAccountId && (
@@ -179,9 +164,7 @@ export default function ShowcaseBets() {
               </p>
             )}
           </div>
-        ) : null}
-
-        {!showEmpty && (
+        ) : (
           <>
             {loading && bets.length === 0 ? (
               <SkeletonGrid />
@@ -193,7 +176,6 @@ export default function ShowcaseBets() {
                     return (
                       <li key={bet.currentid ?? bet.bet_id} className="group">
                         <article className="h-full rounded-2xl border border-white/10 bg-white/[0.04] p-4 md:p-5 transition-transform duration-200 group-hover:-translate-y-0.5">
-                          {/* Top row: ID + status */}
                           <header className="flex items-center justify-between gap-3">
                             <div className="text-xs md:text-sm text-white/70 font-mono">
                               #{String(bet.bet_id ?? 0).padStart(4, "0")}
@@ -211,7 +193,6 @@ export default function ShowcaseBets() {
                             </span>
                           </header>
 
-                          {/* Initiator vs Opponent */}
                           {(bet.initiator || bet.opponent) && (
                             <div className="mt-1 text-xs text-white/60">
                               <span className="font-mono">{bet.initiator ?? "—"}</span>
@@ -220,14 +201,12 @@ export default function ShowcaseBets() {
                             </div>
                           )}
 
-                          {/* Terms */}
                           <div className="mt-3 space-y-2">
                             <div>
                               <div className="text-[11px] uppercase tracking-wide text-white/50">Terms</div>
                               <p className="text-sm md:text-base leading-relaxed break-words">{bet.terms}</p>
                             </div>
 
-                            {/* Resolution (if any) */}
                             {(bet.resolution && bet.resolution.trim().length > 0) && (
                               <div className="pt-2 border-t border-white/10">
                                 <div className="text-[11px] uppercase tracking-wide text-white/50">Resolution</div>
@@ -235,7 +214,6 @@ export default function ShowcaseBets() {
                               </div>
                             )}
 
-                            {/* Details grid */}
                             <div className="pt-2 border-t border-white/10">
                               <div className="text-[11px] uppercase tracking-wide text-white/50 mb-2">Details</div>
                               <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-white/70">
@@ -308,48 +286,5 @@ export default function ShowcaseBets() {
         )}
       </main>
     </div>
-  )
-}
-
-/** Helpers */
-function normalizeBet(raw: any, fallbackId: number): Bet {
-  // Handles both the simple object you logged and any future shape with bet_id/resolution/creator
-  return {
-    bet_id: typeof raw?.bet_id === "number" ? raw.bet_id : fallbackId,
-    terms: raw?.terms ?? "",
-    initiator: raw?.initiator ?? null,
-    opponent: raw?.opponent ?? null,
-    amount: raw?.amount ?? null,
-    currency: raw?.currency ?? null,
-    chain: raw?.chain ?? null,
-    betstatus: raw?.betstatus ?? null,
-    currentid: raw?.currentid ?? null,
-    parentid: raw?.parentid ?? null,
-    remarks: raw?.remarks ?? null,
-    resolution: raw?.resolution ?? null,
-  }
-}
-
-function SkeletonGrid() {
-  return (
-    <ul className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
-      {Array.from({ length: 6 }).map((_, i) => (
-        <li key={i} className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 md:p-5 animate-pulse">
-          <div className="flex justify-between items-center">
-            <div className="h-4 w-16 bg-white/10 rounded" />
-            <div className="h-5 w-16 bg-white/10 rounded" />
-          </div>
-          <div className="mt-3 h-4 w-24 bg-white/10 rounded" />
-          <div className="mt-3 space-y-2">
-            <div className="h-4 w-full bg-white/10 rounded" />
-            <div className="h-4 w-5/6 bg-white/10 rounded" />
-          </div>
-          <div className="mt-3 pt-2 border-t border-white/10 space-y-2">
-            <div className="h-4 w-2/3 bg-white/10 rounded" />
-            <div className="h-4 w-1/2 bg-white/10 rounded" />
-          </div>
-        </li>
-      ))}
-    </ul>
   )
 }
