@@ -1,8 +1,6 @@
 {
-  "name": "bet-parser",
-  "version": "0.0.1",
-  "description": "Takes a general X post and parses bet conditions",
   "category": "agent",
+  "description": "The agent parses and X post into a bet",
   "tags": [],
   "details": {
     "agent": {
@@ -14,5 +12,7 @@
       }
     }
   },
-  "show_entry": true
+  "show_entry": true,
+  "name": "bet-parser",
+  "version": "0.0.3"
 }
