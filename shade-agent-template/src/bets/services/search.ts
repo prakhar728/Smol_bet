@@ -79,8 +79,6 @@ export async function searchTwitter(): Promise<void> {
       created_at: p.created_at,
     };
 
-    console.log(post);
-
     const ts = post.created_at ? Date.parse(post.created_at) / 1000 : Math.floor(Date.now() / 1000);
 
     if (ts <= lastSettleBetSeachTimestamp)
@@ -95,8 +93,6 @@ export async function searchTwitter(): Promise<void> {
     const idx = pendingSettlement.findIndex(
       b => b.conversationId === post.conversation_id
     );
-
-    console.log("Idx is", idx);
 
     if (idx >= 0) {
       const bet = pendingSettlement[idx];
