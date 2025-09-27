@@ -17,7 +17,7 @@ import { getTransactionsForAddress } from "../services/explorer";
 import { createBetInContract } from "../services/contract";
 import { xPost } from "../../lib/X/endpoints/xPost";
 import { log } from "../lib/log";
-import { generateAddress } from "../../lib/chain-signatures";
+import { generateAddress, getBalance } from "../../lib/chain-signatures";
 import { callFunction } from "../../lib/near/functions";
 
 export async function processDeposits(): Promise<void> {
@@ -42,8 +42,8 @@ export async function processDeposits(): Promise<void> {
 
   if (!totalDeposited) {
     try {
-      const balance1 = await evm.getBalance({ address: bet.authorDepositAddress });
-      const balance2 = await evm.getBalance({ address: bet.opponentDepositAddress });
+      const balance1 = await getBalance({ address: (bet.authorDepositAddress as `0x${string}`), chain: bet.chain });
+      const balance2 = await getBalance({ address: (bet.opponentDepositAddress as `0x${string}`), chain: bet.chain });
       log.info("Balance1 is ", balance1);
       log.info("Balance2 is ", balance2);
 
