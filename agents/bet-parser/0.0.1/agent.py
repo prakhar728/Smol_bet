@@ -25,7 +25,7 @@ Return the result in this JSON format:
 
 Here are some examples for you to understand
 Example 1
-Post: @funnyorfud Betting @traderjoe 0.011 ETH that BTC hits 100k by EOY.
+Post: @smol_bet Betting @traderjoe 0.011 ETH that BTC hits 100k by EOY.
 Parsed JSON: 
 {
   "opponent": "@traderjoe",
@@ -34,7 +34,7 @@ Parsed JSON:
 }
 
 Example 2
-Post: @funnyorfud Bet @ethmaxi 0.2 ETH that Ethereum flips Bitcoin in market cap.
+Post: @smol_bet Bet @ethmaxi 0.2 ETH that Ethereum flips Bitcoin in market cap.
 Parsed JSON:
 {
   "opponent": "@ethmaxi",
