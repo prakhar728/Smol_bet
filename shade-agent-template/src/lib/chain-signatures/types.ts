@@ -1,10 +1,7 @@
-
-export type SupportedChain = "evm"; // Extend later if you add solana, etc.
-
 export interface GenerateAddressParams {
   accountId: string;          // Contract/account id that "owns" the path
   path: string;               // Deterministic path for this bet, e.g. `${username}-${tweetId}`
-  chain: SupportedChain;      // "evm" for now
+  chain: string;   
 }
 
 export interface GenerateAddressResult {
