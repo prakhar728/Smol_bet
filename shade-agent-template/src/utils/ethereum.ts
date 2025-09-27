@@ -1,5 +1,5 @@
 import { contracts, chainAdapters } from "chainsig.js";
-import { createPublicClient, http } from "viem";
+import { createPublicClient, http, PublicClient } from "viem";
 import { baseSepolia } from "viem/chains";
 
 export const ethRpcUrl = "https://base-sepolia-rpc.publicnode.com";
@@ -48,6 +48,6 @@ export const publicClient = createPublicClient({
 
 // Set up a chain signatures chain adapter for the Ethereum network
 export const Evm = new chainAdapters.evm.EVM({
-  publicClient,
+  publicClient: publicClient as PublicClient,
   contract: MPC_CONTRACT,
 }) as any;

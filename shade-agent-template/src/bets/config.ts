@@ -1,4 +1,8 @@
 import { networkId } from "../lib/chain-signatures";
+import * as dotenv from "dotenv";
+
+
+dotenv.config({ path: ".env.development.local" });
 
 // BOT CONFIGURATIONS
 export const BOT_NAME = process.env.BOT_NAME || "smol_bet";
