@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { Evm } from "../utils/ethereum";
+import { Evm } from "../lib/chain-adapters/ethereum";
 
 const app = new Hono();
 

@@ -16,6 +16,7 @@ export interface Bet {
   creatorUsername: Username;
   opponentUsername: Username;
   stake: bigint;
+  chain: string;
   description: string;
   mostRecentTweetId: string;
   authorBetPath: string;

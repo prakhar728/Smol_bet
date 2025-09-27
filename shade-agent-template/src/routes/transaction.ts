@@ -5,7 +5,7 @@ import {
   ethContractAddress,
   ethRpcUrl,
   Evm,
-} from "../utils/ethereum";
+} from "../lib/chain-adapters/ethereum";
 import { getEthereumPriceUSD } from "../utils/fetch-eth-price";
 import { Contract, JsonRpcProvider } from "ethers";
 import { utils } from "chainsig.js";

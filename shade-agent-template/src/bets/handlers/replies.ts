@@ -12,6 +12,7 @@ import { xPost } from "../../lib/X/endpoints/xPost";
 import { parsePostToBet } from "../lib/nearai";
 import { generateAddress } from "../../lib/chain-signatures";
 import { log } from "../lib/log";
+import { Bet } from "../types";
 
 export async function processReplies(): Promise<void> {
   const post = pendingReply.shift() as
@@ -45,6 +46,7 @@ export async function processReplies(): Promise<void> {
     const opponentUsername: string = parsed.opponent.substring(1);
     const stakeAmountStr: string = parsed.amount.split(" ")[0];
     const description: string = parsed.bet_terms;
+    const chain: string = parsed.chain;
 
     const stake = BigInt(Math.floor(parseFloat(stakeAmountStr) * 1e18));
     if (stake <= 0n) {
@@ -62,7 +64,7 @@ export async function processReplies(): Promise<void> {
     const { address: authorDepositAddress } = await generateAddress({
       accountId: PUBLIC_CONTRACT_ID,
       path: authorBetPath,
-      chain: "evm",
+      chain: chain,
     });
 
     log.info(`Derived AuthDepositAddress: ${authorDepositAddress}`)
@@ -71,7 +73,7 @@ export async function processReplies(): Promise<void> {
     const { address: opponentDepositAddress } = await generateAddress({
       accountId: PUBLIC_CONTRACT_ID,
       path: opponentBetPath,
-      chain: "evm",
+      chain: chain,
     });
 
     log.info(`Derived OpponentDepositAddress: ${opponentDepositAddress}`)
@@ -83,8 +85,6 @@ export async function processReplies(): Promise<void> {
 
     log.success("Replied successfully!");
 
-    log.success(response);
-
     if (response) {
       const conversationId = post.conversation_id || post.id;
 
@@ -94,6 +94,7 @@ export async function processReplies(): Promise<void> {
         creatorUsername: post.author_username ? post.author_username : "Unknown authorname",
         opponentUsername,
         stake,
+        chain,
         description,
         mostRecentTweetId: response.id,
         authorBetPath,
@@ -105,7 +106,7 @@ export async function processReplies(): Promise<void> {
         timestamp: post.created_at
           ? new Date(post.created_at).getTime() / 1000
           : Math.floor(Date.now() / 1000),
-      };
+      } as Bet;
 
       pendingDeposits.push(bet);
 

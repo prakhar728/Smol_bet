@@ -1,10 +1,9 @@
 import { ethers, Log } from "ethers";
 import BET_ESCROW_CONTRACT from "../assets/BetEscrow.json";
-import { generateAddress, networkId } from "../lib/chain-signatures";
-import { Evm, publicClient } from "./ethereum";
+import { networkId } from "../lib/chain-signatures";
+import { Evm } from "../lib/chain-adapters/ethereum";
 import { requestSignature, contractCall } from "@neardefi/shade-agent-js";
 import { utils } from "chainsig.js";
-import { PUBLIC_CONTRACT_ID } from "../bets/config";
 const { toRSV, uint8ArrayToHex } = utils.cryptography;
 
 // BetEscrow contract address
