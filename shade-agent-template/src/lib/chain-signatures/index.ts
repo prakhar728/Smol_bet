@@ -1,5 +1,5 @@
 /* eslint-disable no-console */
-import { Evm } from "../../utils/ethereum";
+import { Evm } from "../chain-adapters/ethereum";
 import { GenerateAddressParams, GenerateAddressResult } from "./types";
 
 /**
