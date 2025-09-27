@@ -1,4 +1,4 @@
-import { getTransactionsForAddress } from "../bets/services/explorer";
+import { getLatestTransactionForAddress } from "../bets/services/explorer";
 import * as dotenv from "dotenv";
 
 
@@ -44,11 +44,11 @@ async function main() {
     const chainId = 1313161555; // Aurora testnet
 
     console.log("🔹 Fetching Aurora transactions...");
-    let tx = await getTransactionsForAddress(address, chainId);
+    let tx = await getLatestTransactionForAddress(address, chainId);
     console.log("First transaction:", tx);
 
     console.log("🔹 Fetching Base transactions...");
-    tx = await getTransactionsForAddress(address, 84532);
+    tx = await getLatestTransactionForAddress(address, 84532);
     console.log("First transaction:", tx);
 
 }

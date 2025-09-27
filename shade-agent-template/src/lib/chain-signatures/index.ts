@@ -75,5 +75,6 @@ export async function getBalance(
 
 export default {
   generateAddress,
+  getBalance,
   networkId,
 };
