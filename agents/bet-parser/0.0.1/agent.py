@@ -31,15 +31,17 @@ Parsed JSON:
   "opponent": "@traderjoe",
   "amount": "0.011",
   "bet_terms": "BTC hits 100k by EOY"
+  "chain": "AT"
 }
 
 Example 2
-Post: @smol_bet Bet @ethmaxi 0.2 ETH that Ethereum flips Bitcoin in market cap.
+Post: @smol_bet Bet @ethmaxi 0.2 ETH on Base Sepolia that Ethereum flips Bitcoin in market cap.
 Parsed JSON:
 {
   "opponent": "@ethmaxi",
   "amount": "0.2",
-  "bet_terms": "Ethereum flips Bitcoin in market cap"
+  "bet_terms": "Ethereum flips Bitcoin in market cap",
+  "chain": "BS"
 }
 
 The key element is return **ONLY** the parsed JSON. Nothing else. If even one information is missing, or the bet is not in ETH straight up reply with "INVALID".
