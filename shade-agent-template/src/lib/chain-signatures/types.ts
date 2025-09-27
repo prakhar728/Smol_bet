@@ -8,3 +8,8 @@ export interface GenerateAddressResult {
   address: `0x${string}`;     // EVM address
   // you can extend with: derivationPath?: string; chain?: SupportedChain; etc.
 }
+
+export interface GetBalanceParams {
+  address: `0x${string}`;
+  chain: string;
+}
