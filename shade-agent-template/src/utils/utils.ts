@@ -25,3 +25,8 @@ export async function fetchJson<T = any>(
 
 export const sleep = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms));
+
+export const AnnotationToChainIdMap = {
+  "AT": 1313161555,
+  "BS": 84532
+};

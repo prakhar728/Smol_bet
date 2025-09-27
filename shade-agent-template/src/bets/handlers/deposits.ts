@@ -1,10 +1,9 @@
 import { evm } from "../../utils/evm";
-import { sleep } from "../../utils/utils";
+import { AnnotationToChainIdMap, sleep } from "../../utils/utils";
 import {
   DEPOSIT_PROCESSING_DELAY,
   MAX_DEPOSIT_ATTEMPTS,
   BOT_NAME,
-  CHAIN_ID,
   PUBLIC_CONTRACT_ID,
   STORAGE_CONTRACT_ID,
 } from "../config";
@@ -13,7 +12,7 @@ import {
   pendingSettlement,
   pendingRefund,
 } from "../state";
-import { getTransactionsForAddress } from "../services/explorer";
+import { getLatestTransactionForAddress } from "../services/explorer";
 import { createBetInContract } from "../services/contract";
 import { xPost } from "../../lib/X/endpoints/xPost";
 import { log } from "../lib/log";
@@ -49,13 +48,14 @@ export async function processDeposits(): Promise<void> {
 
       if (balance1 >= bet.stake && balance2 >= bet.stake) {
 
+        const CHAIN_ID = AnnotationToChainIdMap[bet.chain];
         log.info(balance1 >= bet.stake);
         log.info(balance2 >= bet.stake);
-        let tx = await getTransactionsForAddress(bet.authorDepositAddress, CHAIN_ID);
+        let tx = await getLatestTransactionForAddress(bet.authorDepositAddress, CHAIN_ID);
         
         const creatorAddress = tx?.from;
 
-        tx = await getTransactionsForAddress(bet.opponentDepositAddress, CHAIN_ID);
+        tx = await getLatestTransactionForAddress(bet.opponentDepositAddress, CHAIN_ID);
         const opponentAddress = tx?.from;
 
         if (creatorAddress && opponentAddress) {
