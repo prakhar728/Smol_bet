@@ -1,7 +1,7 @@
 export interface GenerateAddressParams {
   accountId: string;          // Contract/account id that "owns" the path
   path: string;               // Deterministic path for this bet, e.g. `${username}-${tweetId}`
-  chain: string;   
+  chain: string;
 }
 
 export interface GenerateAddressResult {
@@ -12,4 +12,13 @@ export interface GenerateAddressResult {
 export interface GetBalanceParams {
   address: `0x${string}`;
   chain: string;
+}
+
+export interface TransferDepositsToResolverParams {
+  creatorDepositAddress: string;
+  opponentDepositAddress: string,
+  resolverAddress: string,
+  creatorBetPath: string,
+  opponentBetPath: string,
+  individualStake: bigint
 }

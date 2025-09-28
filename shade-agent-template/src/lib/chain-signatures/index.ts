@@ -1,6 +1,6 @@
 /* eslint-disable no-console */
 import { AuroraTestnet, BaseSepolia } from "../chain-adapters";
-import { GenerateAddressParams, GenerateAddressResult, GetBalanceParams } from "./types";
+import { GenerateAddressParams, GenerateAddressResult, GetBalanceParams, TransferDepositsToResolverParams } from "./types";
 
 export const networkId: "testnet" | "mainnet" =
   (process.env.NEXT_PUBLIC_networkId === "mainnet" ? "mainnet" : "testnet");
@@ -72,6 +72,7 @@ export async function getBalance(
   // normalize to lowercase to avoid mixed-case surprises; callers can checksum as needed
   return data;
 }
+
 
 export default {
   generateAddress,

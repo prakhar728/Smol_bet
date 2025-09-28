@@ -49,6 +49,7 @@ export async function processDeposits(): Promise<void> {
       if (balance1 >= bet.stake && balance2 >= bet.stake) {
 
         const CHAIN_ID = AnnotationToChainIdMap[bet.chain];
+        
         log.info(balance1 >= bet.stake);
         log.info(balance2 >= bet.stake);
         let tx = await getLatestTransactionForAddress(bet.authorDepositAddress, CHAIN_ID);
@@ -83,7 +84,6 @@ export async function processDeposits(): Promise<void> {
     });
 
     console.log("Resolver address", resolverAddress);
-    
 
     bet.resolverAddress = resolverAddress;
     bet.betPath = betPath;
@@ -94,7 +94,8 @@ export async function processDeposits(): Promise<void> {
       resolverAddress: bet.resolverAddress || "0x0",
       creatorBetPath: bet.authorBetPath,
       opponentBetPath: bet.opponentBetPath,
-      individualStake: bet.stake
+      individualStake: bet.stake,
+      chain: bet.chain
     });
 
     if (!transferResult.success) {
