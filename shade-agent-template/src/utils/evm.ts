@@ -173,7 +173,7 @@ export const evm = {
   },
 
   // Resolve a bet in the BetEscrow contract
-  resolveBetTx: async ({ betId, winner, resolverAddress, path }) => {
+  resolveBetTx: async ({ betId, winner, resolverAddress, path, chain }) => {
     try {
       // Create contract interface
       const betEscrowInterface = new ethers.Interface(BET_ESCROW_ABI);
@@ -184,7 +184,9 @@ export const evm = {
         winner,
       ]);
 
-      const { transaction, hashesToSign } = await Evm.prepareTransactionForSigning({
+      const adapter = evm.getChainAdapter(chain);
+
+      const { transaction, hashesToSign } = await adapter.prepareTransactionForSigning({
         to: BET_ESCROW_ADDRESS.testnet,
         value: 0,
         data,
@@ -199,13 +201,13 @@ export const evm = {
       });
 
       // Reconstruct the signed transaction
-      const signedTransaction = Evm.finalizeTransactionSigning({
+      const signedTransaction = adapter.finalizeTransactionSigning({
         transaction,
         rsvSignatures: [toRSV(signRes)],
       });
 
       // Broadcast the signed transaction
-      const txHash = await Evm.broadcastTx(signedTransaction);
+      const txHash = await adapter.broadcastTx(signedTransaction);
 
       // Send back both the txHash and the new price optimistically
       return {

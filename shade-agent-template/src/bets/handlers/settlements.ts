@@ -46,7 +46,8 @@ export async function processSettlements(): Promise<void> {
       bet.betId!,
       winnerAddress,
       bet.resolverAddress!,
-      bet.betPath!
+      bet.betPath!,
+      bet.chain
     );
 
     if (result.success) {
