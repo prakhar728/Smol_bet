@@ -10,7 +10,6 @@ const { toRSV, uint8ArrayToHex } = utils.cryptography;
 // BetEscrow contract address
 const BET_ESCROW_ADDRESS = {
   testnet: "0xFd5152d481CB46Ea91AA317782e5963eDc45a609", // Replace with your testnet contract address
-  mainnet: "0x456DEF...", // Replace with your mainnet contract address
 };
 
 // ABI for BetEscrow contract
@@ -113,6 +112,7 @@ export const evm = {
     resolver,
     stake,
     path,
+    chain
   }) => {
     try {
       // Create contract interface
@@ -132,7 +132,9 @@ export const evm = {
       console.log("resolverAddress", resolver);
       console.log("resolver path", path);
 
-      const { transaction, hashesToSign } = await Evm.prepareTransactionForSigning({
+      const adapter = evm.getChainAdapter(chain);
+
+      const { transaction, hashesToSign } = await adapter.prepareTransactionForSigning({
         from: resolver,
         to: BET_ESCROW_ADDRESS.testnet,
         value: stake,
@@ -146,13 +148,13 @@ export const evm = {
       });
 
       // Reconstruct the signed transaction
-      const signedTransaction = Evm.finalizeTransactionSigning({
+      const signedTransaction = adapter.finalizeTransactionSigning({
         transaction,
         rsvSignatures: [toRSV(signRes)],
       });
 
       // Broadcast the signed transaction
-      const txHash = await Evm.broadcastTx(signedTransaction);
+      const txHash = await adapter.broadcastTx(signedTransaction);
 
       // Send back both the txHash and the new price optimistically
       return {

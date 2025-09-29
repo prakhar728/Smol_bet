@@ -8,6 +8,7 @@ export async function createBetInContract(bet: {
   resolverAddress: string;
   stake: bigint;
   betPath: string;
+  chain: string;
 }) {
   try {
     const createResult = await evm.createBetTx({
@@ -17,12 +18,14 @@ export async function createBetInContract(bet: {
       resolver: bet.resolverAddress,
       stake: bet.stake * 2n,
       path: bet.betPath,
+      chain: bet.chain
     });
+    
     if (!createResult.success)
       return { success: false as const, error: createResult.error };
 
     await new Promise((r) => setTimeout(r, 5000));
-    const betId = (await evm.getBetCount()) - 1;
+    const betId = (await evm.getBetCount(bet.chain)) - 1;
 
     const explorerBase =
       networkId === "testnet"

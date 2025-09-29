@@ -80,7 +80,7 @@ export async function processDeposits(): Promise<void> {
     const { address: resolverAddress } = await generateAddress({
       accountId: PUBLIC_CONTRACT_ID,
       path: betPath,
-      chain: "evm",
+      chain: bet.chain,
     });
 
     console.log("Resolver address", resolverAddress);
@@ -113,6 +113,7 @@ export async function processDeposits(): Promise<void> {
       resolverAddress: bet.resolverAddress!,
       stake: bet.stake,
       betPath: bet.betPath!,
+      chain: bet.chain
     });
 
     if (betResult.success) {
@@ -132,7 +133,7 @@ export async function processDeposits(): Promise<void> {
       const formattedBet = {
         initiator: bet.creatorAddress,
         opponent: bet.opponentAddress,
-        chain: "base sepolia",
+        chain: bet.chain,
         terms: bet.description,
         currency: "ETH",
         amount: bet.stake.toString(),
