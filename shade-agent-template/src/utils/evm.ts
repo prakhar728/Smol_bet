@@ -1,25 +1,23 @@
-import { ethers, Log } from "ethers";
+import { ethers } from "ethers";
 import BET_ESCROW_CONTRACT from "../assets/BetEscrow.json";
 import { networkId } from "../lib/chain-signatures";
 import { Evm } from "../lib/chain-adapters/ethereum";
 import { requestSignature, contractCall } from "@neardefi/shade-agent-js";
 import { utils } from "chainsig.js";
+import { AuroraTestnet, BaseSepolia, chainAnnotationToRpc } from "../lib/chain-adapters";
 const { toRSV, uint8ArrayToHex } = utils.cryptography;
 
 // BetEscrow contract address
 const BET_ESCROW_ADDRESS = {
   testnet: "0xFd5152d481CB46Ea91AA317782e5963eDc45a609", // Replace with your testnet contract address
-  mainnet: "0x456DEF...", // Replace with your mainnet contract address
 };
 
 // ABI for BetEscrow contract
 const BET_ESCROW_ABI = BET_ESCROW_CONTRACT.abi;
 
-const getProvider = () => {
+const getProvider = (chain: string) => {
   return new ethers.JsonRpcProvider(
-    networkId === "testnet"
-      ? "https://base-sepolia-rpc.publicnode.com"
-      : "https://base-rpc.publicnode.com"
+    chainAnnotationToRpc[chain]
   );
 };
 
@@ -34,6 +32,7 @@ interface TransferFromAndToParams {
   paths: string[];
   amounts: bigint[];
   gasLimit?: bigint;
+  chain: string;
 }
 
 /**
@@ -66,6 +65,7 @@ interface TransferDepositsToResolverParams {
   creatorBetPath: string;
   opponentBetPath: string;
   individualStake: bigint;
+  chain: string;
 }
 
 export const evm = {
@@ -78,13 +78,21 @@ export const evm = {
       : "https://basescan.org",
 
   // Get the BetEscrow contract instance
-  getBankrContract: async () => {
-    const provider = getProvider();
+  getBankrContract: async (chain: string) => {
+    const provider = getProvider(chain);
     return new ethers.Contract(
       BET_ESCROW_ADDRESS[networkId],
       BET_ESCROW_ABI,
       provider
     );
+  },
+
+  getChainAdapter: (chain: string) => {
+    if (chain == "AT") {
+      return AuroraTestnet;
+    } else if (chain == "BS") {
+      return BaseSepolia;
+    }
   },
 
   getProvider: getProvider,
@@ -104,6 +112,7 @@ export const evm = {
     resolver,
     stake,
     path,
+    chain
   }) => {
     try {
       // Create contract interface
@@ -123,7 +132,9 @@ export const evm = {
       console.log("resolverAddress", resolver);
       console.log("resolver path", path);
 
-      const { transaction, hashesToSign } = await Evm.prepareTransactionForSigning({
+      const adapter = evm.getChainAdapter(chain);
+
+      const { transaction, hashesToSign } = await adapter.prepareTransactionForSigning({
         from: resolver,
         to: BET_ESCROW_ADDRESS.testnet,
         value: stake,
@@ -137,13 +148,13 @@ export const evm = {
       });
 
       // Reconstruct the signed transaction
-      const signedTransaction = Evm.finalizeTransactionSigning({
+      const signedTransaction = adapter.finalizeTransactionSigning({
         transaction,
         rsvSignatures: [toRSV(signRes)],
       });
 
       // Broadcast the signed transaction
-      const txHash = await Evm.broadcastTx(signedTransaction);
+      const txHash = await adapter.broadcastTx(signedTransaction);
 
       // Send back both the txHash and the new price optimistically
       return {
@@ -211,9 +222,9 @@ export const evm = {
     }
   },
 
-  getBetCount: async () => {
+  getBetCount: async (chain: string) => {
     try {
-      const contract = await evm.getBankrContract();
+      const contract = await evm.getBankrContract(chain);
       const bets = await contract.getTotalBets();
 
       return parseInt(bets);
@@ -245,8 +256,8 @@ export const evm = {
     }
   },
 
-  getGasPrice: async () => getProvider().getFeeData(),
-  getBalance: ({ address }) => getProvider().getBalance(address),
+  getGasPrice: async (chain: string) => getProvider(chain).getFeeData(),
+  getBalance: ({ address, chain }) => getProvider(chain).getBalance(address),
   formatBalance: (balance) => ethers.formatEther(balance),
 
   transferFromAndTo: async ({
@@ -254,6 +265,7 @@ export const evm = {
     toAddress,
     paths,
     amounts,
+    chain,
   }: TransferFromAndToParams): Promise<TransferOperationResult> => {
     if (!fromAddresses || !Array.isArray(fromAddresses) || !toAddress) {
       console.error("Must provide fromAddresses array and toAddress");
@@ -278,7 +290,7 @@ export const evm = {
       return { success: false, transfers: [] };
     }
 
-    const provider = getProvider();
+    const provider = getProvider(chain);
     const results: TransferResult[] = [];
 
     // Process each transfer sequentially
@@ -291,6 +303,8 @@ export const evm = {
         // Check balance
         const balance = await provider.getBalance(from);
         console.log(`Balance of ${from}: ${ethers.formatEther(balance)} ETH`);
+
+        const adapter = evm.getChainAdapter(chain);
 
         const valueToSend = amount;
 
@@ -306,13 +320,7 @@ export const evm = {
           continue;
         }
 
-        console.log(
-          `Transferring ${ethers.formatEther(
-            valueToSend
-          )} ETH from ${from} to ${toAddress}`
-        );
-
-        const { transaction, hashesToSign } = await Evm.prepareTransactionForSigning({
+        const { transaction, hashesToSign } = await adapter.prepareTransactionForSigning({
           from: from,
           to: toAddress,
           value: valueToSend,
@@ -324,13 +332,13 @@ export const evm = {
           payload: uint8ArrayToHex(hashesToSign[0]),
         });
 
-        const signedTransaction = Evm.finalizeTransactionSigning({
+        const signedTransaction = adapter.finalizeTransactionSigning({
           transaction,
           rsvSignatures: [toRSV(signRes)],
         });
 
 
-        const txHash = await Evm.broadcastTx(signedTransaction);
+        const txHash = await adapter.broadcastTx(signedTransaction);
 
         if (txHash) {
           results.push({
@@ -365,6 +373,7 @@ export const evm = {
     creatorBetPath,
     opponentBetPath,
     individualStake,
+    chain,
   }: TransferDepositsToResolverParams): Promise<TransferOperationResult> => {
     if (!creatorDepositAddress || !opponentDepositAddress || !resolverAddress) {
       console.error("Missing required addresses");
@@ -383,6 +392,7 @@ export const evm = {
       paths: [creatorBetPath, opponentBetPath],
       amounts: [individualStake, individualStake],
       gasLimit: 30000n, // Slightly higher gas limit for safety
+      chain
     });
   },
 

@@ -1,10 +1,9 @@
 import { evm } from "../../utils/evm";
-import { sleep } from "../../utils/utils";
+import { AnnotationToChainIdMap, sleep } from "../../utils/utils";
 import {
   DEPOSIT_PROCESSING_DELAY,
   MAX_DEPOSIT_ATTEMPTS,
   BOT_NAME,
-  CHAIN_ID,
   PUBLIC_CONTRACT_ID,
   STORAGE_CONTRACT_ID,
 } from "../config";
@@ -13,7 +12,7 @@ import {
   pendingSettlement,
   pendingRefund,
 } from "../state";
-import { getTransactionsForAddress } from "../services/explorer";
+import { getLatestTransactionForAddress } from "../services/explorer";
 import { createBetInContract } from "../services/contract";
 import { xPost } from "../../lib/X/endpoints/xPost";
 import { log } from "../lib/log";
@@ -49,13 +48,15 @@ export async function processDeposits(): Promise<void> {
 
       if (balance1 >= bet.stake && balance2 >= bet.stake) {
 
+        const CHAIN_ID = AnnotationToChainIdMap[bet.chain];
+        
         log.info(balance1 >= bet.stake);
         log.info(balance2 >= bet.stake);
-        let tx = await getTransactionsForAddress(bet.authorDepositAddress, CHAIN_ID);
+        let tx = await getLatestTransactionForAddress(bet.authorDepositAddress, CHAIN_ID);
         
         const creatorAddress = tx?.from;
 
-        tx = await getTransactionsForAddress(bet.opponentDepositAddress, CHAIN_ID);
+        tx = await getLatestTransactionForAddress(bet.opponentDepositAddress, CHAIN_ID);
         const opponentAddress = tx?.from;
 
         if (creatorAddress && opponentAddress) {
@@ -79,11 +80,10 @@ export async function processDeposits(): Promise<void> {
     const { address: resolverAddress } = await generateAddress({
       accountId: PUBLIC_CONTRACT_ID,
       path: betPath,
-      chain: "evm",
+      chain: bet.chain,
     });
 
     console.log("Resolver address", resolverAddress);
-    
 
     bet.resolverAddress = resolverAddress;
     bet.betPath = betPath;
@@ -94,7 +94,8 @@ export async function processDeposits(): Promise<void> {
       resolverAddress: bet.resolverAddress || "0x0",
       creatorBetPath: bet.authorBetPath,
       opponentBetPath: bet.opponentBetPath,
-      individualStake: bet.stake
+      individualStake: bet.stake,
+      chain: bet.chain
     });
 
     if (!transferResult.success) {
@@ -112,6 +113,7 @@ export async function processDeposits(): Promise<void> {
       resolverAddress: bet.resolverAddress!,
       stake: bet.stake,
       betPath: bet.betPath!,
+      chain: bet.chain
     });
 
     if (betResult.success) {
@@ -131,7 +133,7 @@ export async function processDeposits(): Promise<void> {
       const formattedBet = {
         initiator: bet.creatorAddress,
         opponent: bet.opponentAddress,
-        chain: "base sepolia",
+        chain: bet.chain,
         terms: bet.description,
         currency: "ETH",
         amount: bet.stake.toString(),

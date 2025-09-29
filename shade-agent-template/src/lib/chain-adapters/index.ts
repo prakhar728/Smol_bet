@@ -1,2 +1,11 @@
+import { auroraTestNetRpcUrl } from './aurora-testnet';
+import { baseSepoliaRpcUrl } from './base-sepolia';
+
 export { AuroraTestnet } from './aurora-testnet';
 export { BaseSepolia } from './base-sepolia';
+
+
+export const chainAnnotationToRpc = {
+    "AT": auroraTestNetRpcUrl,
+    "BS": baseSepoliaRpcUrl
+}

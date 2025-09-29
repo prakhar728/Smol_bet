@@ -5,7 +5,7 @@ import * as dotenv from "dotenv";
 
 dotenv.config({ path: ".env.development.local" });
 
-export async function getTransactionsForAddress(
+export async function getLatestTransactionForAddress(
   address: string,
   chainId: number,  
   action: "txlist" | "tokentx" = "txlist"
