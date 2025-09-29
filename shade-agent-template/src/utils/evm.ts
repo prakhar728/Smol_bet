@@ -9,7 +9,8 @@ const { toRSV, uint8ArrayToHex } = utils.cryptography;
 
 // BetEscrow contract address
 const BET_ESCROW_ADDRESS = {
-  testnet: "0xFd5152d481CB46Ea91AA317782e5963eDc45a609", // Replace with your testnet contract address
+  "BS": "0xFd5152d481CB46Ea91AA317782e5963eDc45a609", // Replace with your testnet contract address
+  "AT": "0x402BB0aD0B394EB38ebAA0a5c271eE01341e2AF0"
 };
 
 // ABI for BetEscrow contract
@@ -81,7 +82,7 @@ export const evm = {
   getBankrContract: async (chain: string) => {
     const provider = getProvider(chain);
     return new ethers.Contract(
-      BET_ESCROW_ADDRESS[networkId],
+      BET_ESCROW_ADDRESS[chain],
       BET_ESCROW_ABI,
       provider
     );
@@ -136,7 +137,7 @@ export const evm = {
 
       const { transaction, hashesToSign } = await adapter.prepareTransactionForSigning({
         from: resolver,
-        to: BET_ESCROW_ADDRESS.testnet,
+        to: BET_ESCROW_ADDRESS[chain],
         value: stake,
         data,
       });
@@ -187,7 +188,7 @@ export const evm = {
       const adapter = evm.getChainAdapter(chain);
 
       const { transaction, hashesToSign } = await adapter.prepareTransactionForSigning({
-        to: BET_ESCROW_ADDRESS.testnet,
+        to: BET_ESCROW_ADDRESS[chain],
         value: 0,
         data,
         from: resolverAddress as `0x${string}`,

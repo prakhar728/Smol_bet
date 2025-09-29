@@ -1,0 +1,18 @@
+[profile.default]
+src = "src"
+out = "out"
+libs = ["lib"]
+optimizer = true
+optimizer_runs = 200
+verbosity = 3
+viaIR = true
+evm_version = "paris"   # pre-Shanghai => no PUSH0
+
+[rpc_endpoints]
+base_sepolia   = "https://sepolia.base.org"
+aurora_testnet = "https://testnet.aurora.dev"
+
+[etherscan]
+base_sepolia   = { key = "${BASESCAN_API_KEY}" }
+
+aurora_testnet = { key = "abc", url = "https://explorer.testnet.aurora.dev/api", chain = 1313161555 }
