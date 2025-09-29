@@ -37,9 +37,9 @@ export async function createBetInContract(bet: {
   }
 }
 
-export async function resolveBetInContract(betId: number, winner: string, resolverAddress: string, betPath: string) {
+export async function resolveBetInContract(betId: number, winner: string, resolverAddress: string, betPath: string, chain: string) {
   try {
-    const result = await evm.resolveBetTx({ betId, winner, resolverAddress, path: betPath });
+    const result = await evm.resolveBetTx({ betId, winner, resolverAddress, path: betPath, chain: chain });
     if (!result.success) return { success: false as const, error: result.error };
     await new Promise((r) => setTimeout(r, 3000));
     const explorerBase =
