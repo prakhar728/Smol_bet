@@ -85,7 +85,7 @@ It’s for people who want **skin in the game** without relying on centralized b
 | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `bet_parser`       | AI agent that extracts structured bet data from X posts → [Try it](https://app.near.ai/agents/ai-creator.near/bet-parser/latest)                    |
 | `bet_resolver`     | AI agent that evaluates bet outcomes using NLP + Google → [Try it](https://app.near.ai/agents/ai-creator.near/Bet_Resolver/latest)                  |
-| `@BankrBot`        | Helper bot to resolve wallet addresses from X handles — temporarily using @prakharojha4                                                             |
+| `@BankrBot`        | Helper bot to resolve wallet addresses from X handles(Optional - can use metamask to deposit into the address too)                                                           |
 | `SideBet Contract` | Factory contract that deploys individual SideBets                                                                                                   |
 
 ---
