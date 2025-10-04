@@ -2,7 +2,7 @@ import { contracts, chainAdapters } from "chainsig.js";
 import { createPublicClient, http, PublicClient } from "viem";
 import { auroraTestnet } from "viem/chains";
 
-export const auroraTestNetRpcUrl = "https://base-sepolia-rpc.publicnode.com";
+export const auroraTestNetRpcUrl = "https://testnet.aurora.dev";
 
 // Set up a chain signature contract instance
 const MPC_CONTRACT = new contracts.ChainSignatureContract({

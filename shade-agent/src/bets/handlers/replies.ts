@@ -43,6 +43,8 @@ export async function processReplies(): Promise<void> {
     }
 
     const parsed = JSON.parse(betInfo);
+    console.log(parsed);
+    
     const opponentUsername: string = parsed.opponent.substring(1);
     const stakeAmountStr: string = parsed.amount.split(" ")[0];
     const description: string = parsed.bet_terms;

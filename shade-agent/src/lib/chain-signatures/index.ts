@@ -60,7 +60,9 @@ export async function getBalance(
   let data = 0n;
 
   if (chain == "AT") {
-    const { balance } = await AuroraTestnet.getBalance({ address });
+    console.log(address);
+    
+    const { balance } = await AuroraTestnet.getBalance(address);
 
     data = balance;
   } else if (chain == "BS") {

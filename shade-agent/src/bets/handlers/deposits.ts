@@ -41,6 +41,8 @@ export async function processDeposits(): Promise<void> {
 
   if (!totalDeposited) {
     try {
+      console.log(bet.chain);
+      
       const balance1 = await getBalance({ address: (bet.authorDepositAddress as `0x${string}`), chain: bet.chain });
       const balance2 = await getBalance({ address: (bet.opponentDepositAddress as `0x${string}`), chain: bet.chain });
       log.info("Balance1 is ", balance1);
