@@ -1,10 +1,10 @@
 import { ethers } from "ethers";
 import BET_ESCROW_CONTRACT from "../assets/BetEscrow.json";
 import { networkId } from "../lib/chain-signatures";
-import { Evm } from "../lib/chain-adapters/ethereum";
 import { requestSignature, contractCall } from "@neardefi/shade-agent-js";
 import { utils } from "chainsig.js";
-import { AuroraTestnet, BaseSepolia, chainAnnotationToRpc } from "../lib/chain-adapters";
+import { AuroraTestnet, BaseSepolia, chainAnnotationToExplorer, chainAnnotationToRpc } from "../lib/chain-adapters";
+import { publicClient } from "../lib/chain-adapters/aurora-testnet";
 const { toRSV, uint8ArrayToHex } = utils.cryptography;
 
 // BetEscrow contract address
@@ -78,6 +78,10 @@ export const evm = {
       ? "https://sepolia.basescan.org"
       : "https://basescan.org",
 
+  getChainExplorer: (chain: string) => {
+    return chainAnnotationToExplorer[chain];
+  },
+
   // Get the BetEscrow contract instance
   getBankrContract: async (chain: string) => {
     const provider = getProvider(chain);
@@ -128,40 +132,84 @@ export const evm = {
         creator,
         opponent,
         resolver || ethers.ZeroAddress,
-      ]);
+      ]) as `0x${string}`;
 
       console.log("resolverAddress", resolver);
       console.log("resolver path", path);
 
       const adapter = evm.getChainAdapter(chain);
 
-      const { transaction, hashesToSign } = await adapter.prepareTransactionForSigning({
-        from: resolver,
-        to: BET_ESCROW_ADDRESS[chain],
-        value: stake,
-        data,
-      });
+      let transaction, hashesToSign, signedTransaction, signRes;
 
-      // Call the agent contract to get a signature for the payload
-      const signRes = await requestSignature({
-        path: path,
-        payload: uint8ArrayToHex(hashesToSign[0]),
-      });
+      console.log("The chain is", chain);
+      console.log("Contract address is", BET_ESCROW_ADDRESS[chain]);
 
-      // Reconstruct the signed transaction
-      const signedTransaction = adapter.finalizeTransactionSigning({
-        transaction,
-        rsvSignatures: [toRSV(signRes)],
-      });
+
+      if (chain == "AT") {
+        console.log("here", stake);
+
+        const sender = creator as `0x${string}`;
+
+        const gasEstimated = await publicClient.estimateGas({
+          account: sender,
+          to: BET_ESCROW_ADDRESS[chain],
+          value: stake,            // wei
+          data,
+        });
+
+        const gas = (gasEstimated * 130n) / 100n; // +30% headroom
+
+
+        const gasPrice = await publicClient.getGasPrice();
+
+        console.log(gas,                      // <-- IMPORTANT
+          gasPrice,);
+
+        ({ transaction, hashesToSign } = await adapter.prepareTransactionForSigningLegacy({
+          from: resolver,
+          to: BET_ESCROW_ADDRESS[chain],
+          value: stake,
+          data,
+          gas,                      // <-- IMPORTANT
+        }));
+
+        signRes = await requestSignature({
+          path: path,
+          payload: uint8ArrayToHex(hashesToSign[0]),
+        });
+
+        signedTransaction = adapter.finalizeTransactionSigningLegacy({
+          transaction,
+          rsvSignatures: [toRSV(signRes)],
+        });
+      } else {
+        ({ transaction, hashesToSign } = await adapter.prepareTransactionForSigning({
+          from: resolver,
+          to: BET_ESCROW_ADDRESS[chain],
+          value: stake,
+          data,
+        }));
+
+        signRes = await requestSignature({
+          path: path,
+          payload: uint8ArrayToHex(hashesToSign[0]),
+        });
+
+        signedTransaction = adapter.finalizeTransactionSigning({
+          transaction,
+          rsvSignatures: [toRSV(signRes)],
+        });
+      }
 
       // Broadcast the signed transaction
       const txHash = await adapter.broadcastTx(signedTransaction);
 
+      const explorer = evm.getChainExplorer(chain);
       // Send back both the txHash and the new price optimistically
       return {
         success: true,
         hash: txHash.hash,
-        explorerLink: `${evm.explorer}/tx/${txHash.hash}`,
+        explorerLink: `${explorer}/tx/${txHash.hash}`,
       };
 
     } catch (error) {
@@ -183,38 +231,81 @@ export const evm = {
       const data = betEscrowInterface.encodeFunctionData("resolveBet", [
         betId,
         winner,
-      ]);
+      ]) as `0x${string}`;
 
       const adapter = evm.getChainAdapter(chain);
+      let transaction, hashesToSign, signedTransaction, signRes;
 
-      const { transaction, hashesToSign } = await adapter.prepareTransactionForSigning({
-        to: BET_ESCROW_ADDRESS[chain],
-        value: 0,
-        data,
-        from: resolverAddress as `0x${string}`,
-        account: resolverAddress as `0x${string}`
-      });
+      console.log("The chain is", chain);
 
-      // Call the agent contract to get a signature for the payload
-      const signRes = await requestSignature({
-        path: path,
-        payload: uint8ArrayToHex(hashesToSign[0]),
-      });
+      if (chain == "AT") {
+        console.log("here");
 
-      // Reconstruct the signed transaction
-      const signedTransaction = adapter.finalizeTransactionSigning({
-        transaction,
-        rsvSignatures: [toRSV(signRes)],
-      });
+        const sender = resolverAddress as `0x${string}`;
 
+        const gasEstimated = await publicClient.estimateGas({
+          account: sender,
+          to: BET_ESCROW_ADDRESS[chain],
+          data,
+        });
+
+        const gas = (gasEstimated * 130n) / 100n; // +30% headroom
+
+
+        const gasPrice = await publicClient.getGasPrice();
+
+        console.log(gas,                      // <-- IMPORTANT
+          gasPrice,);
+          
+        ({ transaction, hashesToSign } = await adapter.prepareTransactionForSigningLegacy({
+          to: BET_ESCROW_ADDRESS[chain],
+          value: 0,
+          data,
+          from: resolverAddress as `0x${string}`,
+          account: resolverAddress as `0x${string}`,
+          gas,                      // <-- IMPORTANT
+        }));
+
+        signRes = await requestSignature({
+          path: path,
+          payload: uint8ArrayToHex(hashesToSign[0]),
+        });
+
+        signedTransaction = adapter.finalizeTransactionSigningLegacy({
+          transaction,
+          rsvSignatures: [toRSV(signRes)],
+        });
+      } else {
+        ({ transaction, hashesToSign } = await adapter.prepareTransactionForSigning({
+          to: BET_ESCROW_ADDRESS[chain],
+          value: 0,
+          data,
+          from: resolverAddress as `0x${string}`,
+          account: resolverAddress as `0x${string}`,
+        }));
+
+        signRes = await requestSignature({
+          path: path,
+          payload: uint8ArrayToHex(hashesToSign[0]),
+        });
+
+
+        signedTransaction = adapter.finalizeTransactionSigning({
+          transaction,
+          rsvSignatures: [toRSV(signRes)],
+        });
+      }
+
+      
       // Broadcast the signed transaction
       const txHash = await adapter.broadcastTx(signedTransaction);
-
+      
+      const explorer = evm.getChainExplorer(chain);
       // Send back both the txHash and the new price optimistically
       return {
         success: true,
         hash: txHash.hash,
-        explorerLink: `${evm.explorer}/tx/${txHash.hash}`,
+        explorerLink: `${explorer}/tx/${txHash.hash}`,
       };
     } catch (error) {
       console.error("Error in resolving bet:", error);
@@ -322,28 +413,54 @@ export const evm = {
           });
           continue;
         }
+        let transaction, hashesToSign, signedTransaction, signRes;
 
-        const { transaction, hashesToSign } = await adapter.prepareTransactionForSigning({
-          from: from,
-          to: toAddress,
-          value: valueToSend,
-          data: "0x",
-        });
+        console.log("The chain is", chain);
 
-        const signRes = await requestSignature({
-          path: path,
-          payload: uint8ArrayToHex(hashesToSign[0]),
-        });
+        if (chain == "AT") {
+          console.log("here");
 
-        const signedTransaction = adapter.finalizeTransactionSigning({
-          transaction,
-          rsvSignatures: [toRSV(signRes)],
-        });
+          ({ transaction, hashesToSign } = await adapter.prepareTransactionForSigningLegacy({
+            from: from,
+            to: toAddress,
+            value: valueToSend,
+            data: "0x",
+          }));
 
+          signRes = await requestSignature({
+            path: path,
+            payload: uint8ArrayToHex(hashesToSign[0]),
+          });
+
+          signedTransaction = adapter.finalizeTransactionSigningLegacy({
+            transaction,
+            rsvSignatures: [toRSV(signRes)],
+          });
+        } else {
+          ({ transaction, hashesToSign } = await adapter.prepareTransactionForSigning({
+            from: from,
+            to: toAddress,
+            value: valueToSend,
+            data: "0x",
+          }));
+
+          signRes = await requestSignature({
+            path: path,
+            payload: uint8ArrayToHex(hashesToSign[0]),
+          });
+
+
+          signedTransaction = adapter.finalizeTransactionSigning({
+            transaction,
+            rsvSignatures: [toRSV(signRes)],
+          });
+        }
 
         const txHash = await adapter.broadcastTx(signedTransaction);
-
+        
         if (txHash) {
+          console.log("tx1 is done");
+          
           results.push({
             success: true,
             from: from,
@@ -352,7 +469,7 @@ export const evm = {
         }
 
         // Add a small delay between transactions
-        await sleep(2000);
+        await sleep(6000);
       } catch (error) {
         console.error(`Error transferring from ${from}:`, error);
         results.push({

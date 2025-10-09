@@ -17,7 +17,6 @@ import { createBetInContract } from "../services/contract";
 import { xPost } from "../../lib/X/endpoints/xPost";
 import { log } from "../lib/log";
 import { generateAddress, getBalance } from "../../lib/chain-signatures";
-import { callFunction } from "../../lib/near/functions";
 
 export async function processDeposits(): Promise<void> {
   const bet = pendingDeposits.shift(); 
@@ -124,9 +123,9 @@ export async function processDeposits(): Promise<void> {
       console.log("BetId is ", betResult.betId);
       
       await xPost(
-        `Bet created!
-        \n\nBet between @${bet.creatorUsername} and @${bet.opponentUsername} is now active!
+        `\n\nBet is now active!
         \n\nTotal stake: ${evm.formatBalance(bet.stake * 2n)} ETH\n\nDescription: "${bet.description}"
+        \n\n Tx: ${betResult.explorerLink}
         \n\nEither party can trigger settlement by tagging @${BOT_NAME} with "settle bet"`,
         bet.mostRecentTweetId,
       );
@@ -144,13 +143,13 @@ export async function processDeposits(): Promise<void> {
         remarks: "Early bet tests",
       };
 
-      await callFunction({
-          contractId: STORAGE_CONTRACT_ID,
-          methodName: "add_bet",
-          args: formattedBet,
-          gasTGas: 50,        // simple write
-          waitUntil: "FINAL",
-        });
+      // await callFunction({
+      //     contractId: STORAGE_CONTRACT_ID,
+      //     methodName: "add_bet",
+      //     args: formattedBet,
+      //     gasTGas: 50,        // simple write
+      //     waitUntil: "FINAL",
+      //   });
 
       pendingSettlement.push(bet);
     } else {

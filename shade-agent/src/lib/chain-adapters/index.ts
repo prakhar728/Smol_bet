@@ -9,3 +9,8 @@ export const chainAnnotationToRpc = {
     "AT": auroraTestNetRpcUrl,
     "BS": baseSepoliaRpcUrl
 }
+
+export const chainAnnotationToExplorer = {
+    "AT": "https://explorer.testnet.aurora.dev",
+    "BS": "https://sepolia.basescan.org"
+}
