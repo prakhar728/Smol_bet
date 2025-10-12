@@ -1,35 +1,33 @@
-## Updated Roadmap (October 2025)
+# Smol Bet - Product Roadmap (Next 6 weeks)
 
-### October
-#### **Week 1** 
-- Build **whitelisting platform** to control access to the bot (Shifted to this month) - Still Pending
-- Invite early testers to interact, iterate, and report bugs  
-- Reiterate and improve **fault tolerance** — aim for **zero downtime** in core flow  
+## October 
 
+### **Week 3** (13th - 19th)
+- Complete the Aurora Testnet Flow - end to end.
+- Ensure reward distribution is working as expected.
+- Ensure X tweet pickups are accurate.
 
-#### **Week 2**
-- Begin **R&D on NEAR AI Agent** for bet resolution  (Shifted to this month)
-- Connect bot flow to create, accept, and resolve bets fully onchain  
-- Test **TEE + NEAR Shade Agent** end-to-end inside Phala TEE  
+### **Week 4** (20th - 25th)
+- Shifting to Near Private AI - Near AI agenthub is sunsetting soon, we'll have to shift to a different deployment platform.
+- Release AI resolutors benchmarks - compare results of the bets and terms entered by the users.
+- Wrap the whitelisting users + simulation flow.
 
-#### **Week 3**
-- Have people test thoroughly on **Aurora Testnet**, create a leaderboard and a proper way to track activites and make sure they all can create bets, and resolve them.
-- Make sure bet backup can be pickedup later.
+### **Week 5** (26th - 31st)
+- Release documentation on private storage with Shade Agents and Filecoin/ or a solution by Phala.
+- Release leaderboard metrics, and systems. 
+- Marketing on X should start here.
 
-#### **Week 4**
-- Final pre-launch testing on **Aurora Testnet** with full bot integration  
-- Simulate high-load scenarios to verify uptime and performance  
-- Prepare documentation, README, and onboarding guide for public release 
+## November
 
-### November
-#### **Week 1** 
-- Creaet a Near contract for creating bets etc. (Dependent on ChainSig.js)
-- Iterate, and test bugs, make sure the contract works on testnet.
+### **Week 1** (1st - 7th)
 
+- Release the whitelisted users campaign. Allow people to create bets, resolve and playaround with the bot.
+- Release Dispute Resolution - alpha(Get market feedback for iteration and improvement)
 
-#### **Week 2**
-- Begin **R&D on NEAR AI Agent** for bet resolution  (Shifted to this month) - Revisit a Dispute Model.
-- Connect bot flow to create, accept, and resolve bets fully onchain  
+### **Week 2** (8th - 15th)
+
+- Near Intents integration - allow people to deposit through any EVM chain, and using intents bridge it to Aurora to manage funds.
+- Later the distribution of rewards can be managed through Near Chain Signatures again.
 
 
 ## 🗓️ Development Roadmap (Aug → Sept 2025)
