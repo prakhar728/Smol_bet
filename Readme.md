@@ -1,110 +1,63 @@
-# 🧃 Smol Bet — Onchain Side Bet Protocol
+# 🧠 **Smol Bet — Agentic Betting, Cross-Chain by Design**
 
-Smol Bet is a lightweight, trust-minimized **peer-to-peer betting protocol** that turns informal wagers into enforceable onchain contracts.  
-Users create bets by tagging friends on Twitter/X, staking ETH, and settling outcomes based on real-world events — resolved by **NEAR AI Agents + Google search**.
+**Smol Bet** is an **agentic betting platform** that transforms social posts into on-chain wagers.  
+Built using the **Shade Agents Framework**, it enables users to create, join, and resolve bets directly on **X (Twitter)** — without intermediaries, custodians, or centralized systems.  
 
-👉 **No oracles. No middlemen. Just verifiable stakes, AI-enforced outcomes, and automated payouts.**
+Funds are securely managed through **NEAR Chain Signatures**, ensuring verifiable multi-chain deposits, while **NEAR AI** automatically verifies outcomes and settles bets transparently.  
+Smol Bet brings **trustless, AI-driven, and social-native betting** to the Web3 ecosystem.
+
+> **Verifiable stakes. AI-enforced outcomes. Automated payouts.**
 
 ---
 
-## 🚀 Live Escrow Contracts
+## 💡 **The Problem**
+Social bets are everywhere — crypto price predictions, sports debates, or friendly dares — but they’re **unenforceable, unverifiable, and easily forgotten**. 
 
+Social and onchain betting today faces several core challenges:
+
+* Centralized platforms require trust in intermediaries or custodians.
+* Cross-chain participation is complex and fragmented.
+* Manual resolution of bets often leads to disputes and bias.
+* Poor UX and slow onboarding prevent mainstream adoption
+
+---
+
+## ⚙️ **How Smol Bet Solves It**
+1. **Detects bets on X** using an autonomous **Shade Agent**.  
+2. **Parses terms** with an AI-powered `bet_parser`.  
+3. **Generates non-custodial deposit addresses** using **NEAR Chain Signatures**.  
+4. **Automates resolution** via **NEAR AI**, enforcing payouts trustlessly.  
+
+---
+
+## 🧩 **Core Tech Stack**
+- **Shade Agents Framework** — Secure TEEs + NEAR key management for agentic automation.  
+- **NEAR Chain Signatures** — Verifiable, multi-chain deposits and fund control.  
+- **NEAR AI** — Natural language understanding + web search for autonomous resolution.  
+- **Aurora Testnet** + **Base Sepolia** — Active test deployments for escrow contracts.  
+
+---
+
+## 📂 **Documentation**
+Full implementation details, architecture diagrams, and phase-wise build notes are in the [`/docs`](./docs) folder.  
+- **Phase 1:** Bet Searching & Parsing [->](/docs/phase1.md)  
+- **Phase 2:** Escrow Generation & Deposits  [->](/docs/phase2.md)  
+- **Phase 3:** AI Resolution & Payouts  [->](/docs/phase3.md)  
+
+---
+
+## 🛠 **Live Contracts**
 - [Base Sepolia — Escrow Factory](https://sepolia.basescan.org/address/0xfd5152d481cb46ea91aa317782e5963edc45a609)  
-- [Aurora Testnet — Escrow Factory](https://explorer.testnet.aurora.dev/address/0x402BB0aD0B394EB38ebAA0a5c271eE01341e2AF0)  
+- [Aurora Testnet — Escrow Factory](https://explorer.testnet.aurora.dev/address/0x402BB0aD0B394EB38ebAA0a5c271eE01341e2AF0)
 
 ---
 
-## 🔁 Flow Overview
-
-<img src="./public/smol_bet_flow.png" alt="Smol Bet flow" width="400"/>
-
-1. **Create a Bet**  
-   Tag `@smol_bet` and an opponent on X, e.g.  
-   ```
-   @smol_bet @opponent I bet you 0.05 ETH that NEAR will be up 10% tomorrow.
-   ```
-
-2. **Parse the Bet** (via `bet_parser`)  
-   - Extracts creator, opponent, stake amount, and bet terms.  
-   - Returns structured JSON.  
-
-3. **Escrow Setup**  
-   - A unique **MPC escrow** address is generated.  
-   - Bot replies with deposit instructions.  
-
-4. **Stake & Lock**  
-   - Both parties deposit ETH.  
-   - Bet contract is deployed via factory.  
-   - Bet becomes **active**.  
-
-5. **Settlement Request**  
-   - Either party tags the bot:  
-   ```
-   @smol_bet settle bet
-   ```
-
-6. **Resolution** (via `bet_resolver`)  
-   - Interprets bet terms.  
-   - Queries Google for the real-world outcome.  
-   - Returns `TRUE` (creator wins) or `FALSE` (opponent wins).  
-
-7. **Payout**  
-   - Winner receives **99%** of the pool.  
-   - **1% protocol fee** goes to treasury.  
+## 🗺 **Roadmap (Q4 2025)**
+- View the complete [Roadmap here](./Roadmap.md)
 
 ---
 
-## 🌍 Why Smol Bet?
-
-Informal bets are everywhere — but they’re **unenforceable and often forgotten**.  
-
-- Crypto price calls  
-- Sports hot takes  
-- Friendly challenges  
-
-Smol Bet turns these into **onchain, social-native contracts** using the platforms people already use (like X).  
-It’s for people who want **skin in the game** without relying on centralized bookies or clunky prediction markets.  
-
----
-
-## 💸 Revenue Model
-
-- **1% fee** on winning payouts funds the protocol treasury.  
-- Scales with bet volume and stake size.  
-
-**Future optional layers:**  
-1. Sponsorships on high-visibility bets  
-2. Premium features (anonymity, auto-settlement, group bets)  
-3. DAO governance of treasury  
-
----
-
-## 🛠 Components
-
-| Component          | Description                                                                                                                                         |
-| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `bet_parser`       | AI agent that extracts structured bet data from X posts → [Try it](https://app.near.ai/agents/ai-creator.near/bet-parser/latest)                    |
-| `bet_resolver`     | AI agent that evaluates bet outcomes using NLP + Google → [Try it](https://app.near.ai/agents/ai-creator.near/Bet_Resolver/latest)                  |
-| `@BankrBot`        | Helper bot to resolve wallet addresses from X handles(Optional - can use metamask to deposit into the address too)                                                           |
-| `SideBet Contract` | Factory contract that deploys individual SideBets                                                                                                   |
-
----
-
-## 🗺 Roadmap (Q4 2025)
-
-- ✅ Escrow contracts live on **Aurora Testnet** + **Base Sepolia**  
-- 🔄 End-to-end flow testing (create → stake → settle)  
-- 🔬 R&D on **TEE-powered NEAR Shade Agent** for resolution  
-- 📊 Leaderboard + bet tracking for early testers  
-- 🛠 Backup/continuity: Resume bets after downtime  
-- 🔮 Next: Prototype expansion to **Solana** + advanced AI arbitration  
-
----
-
-## 📣 Call to Action
-
-- **Test**: Try Smol Bet on Aurora/Base testnets.  
-- **Contribute**: Help improve contracts, agents, and UX.  
-- **Follow**: Join early experiments and help shape the protocol.  
-
-📂 One-pager also available under `docs/` or root `README` for easy sharing.
+## 📣 **Get Involved**
+- 🧪 **Test** — Try Smol Bet on Aurora/Base testnets.  
+- 🧱 **Build** — Contribute to agents, contracts, and flows.  
+- 📢 **Follow** — [@smol_bet](https://twitter.com/smol_bet) for live updates.  
