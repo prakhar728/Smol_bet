@@ -1,30 +1,31 @@
-# Smol Bet - Product Roadmap (Next 6 weeks)
+# Smol Bet - Product Roadmap (Next 5 weeks)
 
 ## October 
 
-### **Week 3** (13th - 19th)
+### **Week 4** (24th - 31st)
 - Complete the Aurora Testnet Flow - end to end.
 - Ensure reward distribution is working as expected.
 - Ensure X tweet pickups are accurate.
 
-### **Week 4** (20th - 25th)
+## November
+
+### **Week 1** (1st - 7th)
 - Shifting to Near Private AI - Near AI agenthub is sunsetting soon, we'll have to shift to a different deployment platform.
 - Release AI resolutors benchmarks - compare results of the bets and terms entered by the users.
 - Wrap the whitelisting users + simulation flow.
 
-### **Week 5** (26th - 31st)
+###  **Week 2** (8th - 15th)
 - Release documentation on private storage with Shade Agents and Filecoin/ or a solution by Phala.
 - Release leaderboard metrics, and systems. 
 - Marketing on X should start here.
 
-## November
 
-### **Week 1** (1st - 7th)
+### **Week 3** (16th - 23rd)
 
 - Release the whitelisted users campaign. Allow people to create bets, resolve and playaround with the bot.
 - Release Dispute Resolution - alpha(Get market feedback for iteration and improvement)
 
-### **Week 2** (8th - 15th)
+### **Week 4** (24th - 30th)
 
 - Near Intents integration - allow people to deposit through any EVM chain, and using intents bridge it to Aurora to manage funds.
 - Later the distribution of rewards can be managed through Near Chain Signatures again.
