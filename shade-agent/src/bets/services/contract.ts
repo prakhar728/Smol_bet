@@ -29,7 +29,7 @@ export async function createBetInContract(bet: {
 
     const explorerBase =
       networkId === "testnet"
-        ? "https://sepolia.basescan.org/tx/"
+        ? "https://explorer.testnet.aurora.dev/tx/"
         : "https://basescan.org/tx/";
     return { success: true as const, betId, explorerLink: explorerBase + createResult.hash };
   } catch (e: any) {
@@ -44,7 +44,7 @@ export async function resolveBetInContract(betId: number, winner: string, resolv
     await new Promise((r) => setTimeout(r, 3000));
     const explorerBase =
       networkId === "testnet"
-        ? "https://sepolia.basescan.org/tx/"
+        ? "https://explorer.testnet.aurora.dev/tx/"
         : "https://basescan.org/tx/";
     return { success: true as const, explorerLink: explorerBase + result.hash };
   } catch (e: any) {

@@ -40,7 +40,7 @@ For each bet:
 ## **Escrow Creation on Aurora**
 1. Call the **SideBet Escrow Factory** on Aurora Testnet to create a new **bet contract** (parameters: participants, stake, description/terms).  
 2. On success, the **resolver** transfers the combined stake (**2 × amount**) into the newly created escrow contract.  
-3. The bet status transitions to **active** once escrow funding is confirmed on-chain.
+3. The bet status transitions to **active** once escrow funding is confirmed onchain.
 
 ---
 

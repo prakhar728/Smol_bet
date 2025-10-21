@@ -75,7 +75,7 @@ export const evm = {
   currency: "ETH",
   explorer:
     networkId === "testnet"
-      ? "https://sepolia.basescan.org"
+      ? "https://explorer.testnet.aurora.dev"
       : "https://basescan.org",
 
   getChainExplorer: (chain: string) => {
