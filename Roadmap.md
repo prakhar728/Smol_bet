@@ -29,7 +29,7 @@ This roadmap outlines quarterly goals.
 - Release **AI resolutor benchmarks** and **leaderboards**. 
 - Publish docs on **private storage** (Shade Agents + Filecoin/Phala).
 - Launch **whitelisted user campaign** and **Dispute Resolution (alpha)**.  
-- Integrate **Near Intents** for multichain deposits (EVM → Aurora). 
+- Integrate **Near Intents** for multichain deposits (Any EVM → Aurora). 
 
 **Goal:** Public testing with whitelisted users + **Intents enabled** EVM chain betting should work in Q4.
 
