@@ -1,4 +1,4 @@
-# 🧩 **Phase 1 — Bet Searching**
+# **Phase 1 — Bet Searching**
 
 ## **Overview**
 Phase 1 forms the foundation of **Smol Bet’s autonomous workflow**.  
