@@ -2,9 +2,9 @@
 
 ## **Overview**
 Phase 1 forms the foundation of **Smol Bet’s autonomous workflow**.  
-In this stage, the Shade Agent constantly scans **X (Twitter)** for potential bet related posts, interprets them, and prepares the necessary on-chain setup for deposits.
+In this stage, the Shade Agent constantly scans **X (Twitter)** for potential bet related posts, interprets them, and prepares the necessary onchain setup for deposits.
 
-The goal is to transform natural language posts into structured data the protocol can act on automatically, verifiably, and cross-chain.
+The goal is to transform natural language posts into structured data the protocol can act on automatically, verifiably, and cross chain.
 
 ---
 
@@ -51,7 +51,7 @@ ${post.author_username}-${post.id}
 ${opponent_username}-${post.id}
 ```
 
-This ensures every bet’s funds are **verifiable, non-custodial, and linked directly** to the originating social post.
+This ensures every bet’s funds are **verifiable, non custodial, and linked directly** to the originating social post.
 
 ---
 

@@ -15,7 +15,7 @@ The agent pulls pending bets from state, verifies that both parties have deposit
 ## ⏱**Deposit Check Policy**
 - **Rate:** up to **12 balance checks per minute** per bet (to avoid spamming providers).  
 - Each bet maintains a **depositAttemptCount**; if it reaches the cap, checks pause until the next cycle.  
-- This policy is idempotent and prevents accidental over-querying.
+- This policy is idempotent and prevents accidental overquerying.
 
 ---
 
