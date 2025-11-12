@@ -28,7 +28,7 @@ export function Hero() {
               </Button> */}
 
               <Button asChild className="bg-[#C3F53B] text-black hover:bg-[#C3F53B]/90">
-                <Link href="campaign" target="_blank" rel="noreferrer">Live Campaign</Link>
+                <Link href="waitlist" target="_blank" rel="noreferrer">Waitlist</Link>
               </Button>
               <Button
                 asChild
@@ -48,7 +48,7 @@ export function Hero() {
               <svg
                 viewBox="0 0 120 120"
                 aria-hidden
-                className="w-[90px] h-[90px] md:w-[140px] md:h-[140px]"
+                className="w-[90px] h-[90px] md:w-[140px] md:h-[140px] chevron-animated"
               >
                 <path d="M20 15 L100 60 L20 105 Z" fill="#C3F53B" />
               </svg>

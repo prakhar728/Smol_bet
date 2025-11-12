@@ -1,11 +1,12 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import { ExternalLink } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { LogoMark } from "@/components/brand/logo-mark"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
+import { LogoMark } from "./brand/logo-mark"
 
 export function SiteHeader() {
   const pathname = usePathname()
@@ -18,6 +19,15 @@ export function SiteHeader() {
           href="/"
           className="flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime rounded-md"
         >
+          <Image
+            src="/logo.png"
+            alt="SMOL BET"
+            width={120}
+            height={40}
+            className="h-8 w-auto"
+            priority
+          />
+
           <LogoMark />
           <span className="sr-only">SMOL BET</span>
         </Link>
@@ -56,8 +66,8 @@ export function SiteHeader() {
             asChild
             className="bg-lime text-charcoal hover:bg-lime/90 focus-visible:ring-lime"
           >
-            <Link href="/campaign" aria-label="Live Campaign">
-              Live Campaign
+            <Link href="/waitlist" aria-label="waitlist">
+              Waitlist
               <ExternalLink className="ml-2 h-4 w-4" />
             </Link>
           </Button>

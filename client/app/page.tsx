@@ -13,6 +13,7 @@ import { Section } from "@/components/section"
 import { copy } from "@/constants/copy"
 import { ValueCarousel } from "@/components/value-carousel"
 import HowItWorksPage from "../components/how-it-works"
+import { DesktopHorizontalScroll } from "@/components/desktop-horizontal-scroll"
 
 export const metadata: Metadata = {
   title: "SMOL BET — Trustless wagers from tweets",
@@ -44,28 +45,39 @@ export default function Page() {
   return (
     <div className="min-h-[100dvh] bg-charcoal text-off flex flex-col">
       <SiteHeader />
-      <main role="main" className="flex-1">
-        <Hero />
+      <DesktopHorizontalScroll>
+        <section className="snap-section md:snap-start md:shrink-0 md:w-screen" data-snap-section>
+          <Hero />
+        </section>
 
-        <Section id="values" className="py-16 md:py-24">
-          <div className="container px-4 md:px-6">
-            <ValueCarousel />
-          </div>
-        </Section>
+        <section className="snap-section md:snap-start md:shrink-0 md:w-screen" data-snap-section>
+          <Section id="values" className="py-16 md:py-24">
+            <div className="container px-4 md:px-6">
+              <ValueCarousel />
+            </div>
+          </Section>
+        </section>
 
-        <Section className="py-10">
-          <div className="container px-4 md:px-6">
-            <SocialProof />
-          </div>
-        </Section>
+        <section className="snap-section md:snap-start md:shrink-0 md:w-screen" data-snap-section>
+          <Section className="py-10">
+            <div className="container px-4 md:px-6">
+              <SocialProof />
+            </div>
+          </Section>
+        </section>
 
-        <Section id="how-it-works" className="py-16 md:py-24">
-          <div className="container px-4 md:px-6 space-y-6">
-            <HowItWorksPage />
-          </div>
-        </Section>
-      </main>
-      <SiteFooter />
+        <section className="snap-section md:snap-start md:shrink-0 md:w-screen" data-snap-section>
+          <Section id="how-it-works" className="py-16 md:py-24">
+            <div className="container px-4 md:px-6 space-y-6">
+              <HowItWorksPage />
+            </div>
+          </Section>
+        </section>
+
+        <section className="snap-section md:snap-start md:shrink-0 md:w-screen" data-snap-section>
+          <SiteFooter />
+        </section>
+      </DesktopHorizontalScroll>
     </div>
   )
 }

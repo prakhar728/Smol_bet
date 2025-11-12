@@ -88,3 +88,26 @@
     @apply bg-background text-foreground;
   }
 }
+
+@keyframes chevronSpin {
+  0% {
+    transform: rotate(0deg) scale(1.4);
+  }
+  100% {
+    transform: rotate(720deg) scale(1);
+  }
+}
+
+@keyframes chevronBump {
+  0%, 100% {
+    transform: rotate(720deg) scale(1) translateX(0);
+  }
+  50% {
+    transform: rotate(720deg) scale(1) translateX(20px);
+  }
+}
+
+.chevron-animated {
+  animation: chevronSpin 0.6s ease-out 1s forwards, chevronBump 1.2s ease-in-out 1.8s 2;
+  transform-origin: center;
+}
