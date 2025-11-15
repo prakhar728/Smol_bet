@@ -51,6 +51,14 @@ export default function Page() {
         </section>
 
         <section className="snap-section md:snap-start md:shrink-0 md:w-screen" data-snap-section>
+          <Section id="how-it-works" className="py-16 md:py-24">
+            <div className="container px-4 md:px-6 space-y-6">
+              <HowItWorksPage />
+            </div>
+          </Section>
+        </section>
+        
+        <section className="snap-section md:snap-start md:shrink-0 md:w-screen" data-snap-section>
           <Section id="values" className="py-16 md:py-24">
             <div className="container px-4 md:px-6">
               <ValueCarousel />
@@ -66,13 +74,7 @@ export default function Page() {
           </Section>
         </section>
 
-        <section className="snap-section md:snap-start md:shrink-0 md:w-screen" data-snap-section>
-          <Section id="how-it-works" className="py-16 md:py-24">
-            <div className="container px-4 md:px-6 space-y-6">
-              <HowItWorksPage />
-            </div>
-          </Section>
-        </section>
+
 
         <section className="snap-section md:snap-start md:shrink-0 md:w-screen" data-snap-section>
           <SiteFooter />

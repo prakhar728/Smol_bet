@@ -12,6 +12,44 @@ type DesktopHorizontalScrollProps = {
 export function DesktopHorizontalScroll({ className, children }: DesktopHorizontalScrollProps) {
   const containerRef = React.useRef<HTMLDivElement | null>(null)
   const isAnimatingRef = React.useRef(false)
+  const currentSectionIndexRef = React.useRef(0)
+
+  // Reset vertical scroll when section changes
+  const resetVerticalScroll = React.useCallback((targetSection: HTMLElement) => {
+    // Reset window scroll position
+    window.scrollTo({ top: 0, behavior: "smooth" })
+    // Also reset any scrollable containers within the section
+    targetSection.scrollTop = 0
+  }, [])
+
+  // Listen for horizontal scroll changes to detect section switches
+  React.useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+
+    const handleScroll = () => {
+      if (typeof window === "undefined") return
+      if (!window.matchMedia("(min-width: 768px)").matches) return
+
+      const sections = Array.from(
+        el.querySelectorAll<HTMLElement>(".snap-section,[data-snap-section='true']")
+      )
+      if (sections.length === 0) return
+
+      const currentIndex = Math.round(el.scrollLeft / el.clientWidth)
+      
+      if (currentIndex !== currentSectionIndexRef.current) {
+        const targetSection = sections[currentIndex]
+        if (targetSection) {
+          resetVerticalScroll(targetSection)
+          currentSectionIndexRef.current = currentIndex
+        }
+      }
+    }
+
+    el.addEventListener("scroll", handleScroll, { passive: true })
+    return () => el.removeEventListener("scroll", handleScroll)
+  }, [resetVerticalScroll])
 
   const onWheel = React.useCallback((e: React.WheelEvent<HTMLDivElement>) => {
     // Only translate wheel to horizontal on md+ screens
@@ -43,6 +81,12 @@ export function DesktopHorizontalScroll({ className, children }: DesktopHorizont
 
       if (!target) return
 
+      // Reset vertical scroll when switching sections
+      if (nextIndex !== currentSectionIndexRef.current) {
+        resetVerticalScroll(target)
+        currentSectionIndexRef.current = nextIndex
+      }
+
       isAnimatingRef.current = true
       el.scrollTo({ left: target.offsetLeft, behavior: "smooth" })
       // unlock after animation ends
@@ -50,7 +94,7 @@ export function DesktopHorizontalScroll({ className, children }: DesktopHorizont
         isAnimatingRef.current = false
       }, 650)
     }
-  }, [])
+  }, [resetVerticalScroll])
 
   return (
     <div

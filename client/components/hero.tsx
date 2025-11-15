@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
 
 export function Hero() {
@@ -59,6 +60,16 @@ export function Hero() {
               Turning tweets into trustless wagers — no middlemen, just TEE’s and verifiable AI.
             </p>
           </div>
+        </div>
+        
+        <div className="mt-12 md:mt-16 flex justify-center">
+          <Image
+            src="/example_bet.png"
+            alt="Example X post creating a bet"
+            width={800}
+            height={600}
+            className="rounded-lg border border-white/10 shadow-2xl max-w-full h-auto"
+          />
         </div>
       </div>
     </section>
