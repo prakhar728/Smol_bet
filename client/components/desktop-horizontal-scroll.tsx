@@ -21,7 +21,7 @@ export function DesktopHorizontalScroll({ className, children }: DesktopHorizont
     // Also reset any scrollable containers within the section
     targetSection.scrollTop = 0
   }, [])
-
+  
   // Listen for horizontal scroll changes to detect section switches
   React.useEffect(() => {
     const el = containerRef.current
@@ -58,7 +58,6 @@ export function DesktopHorizontalScroll({ className, children }: DesktopHorizont
       const el = containerRef.current
       const canScrollHorizontally = el.scrollWidth > el.clientWidth
       if (!canScrollHorizontally) return
-      e.preventDefault()
 
       if (isAnimatingRef.current) return
 
@@ -71,11 +70,90 @@ export function DesktopHorizontalScroll({ className, children }: DesktopHorizont
       )
       if (sections.length === 0) {
         // Fallback to smooth horizontal scroll
+        e.preventDefault()
         el.scrollLeft += delta
         return
       }
 
       const currentIndex = Math.round(el.scrollLeft / el.clientWidth)
+      const currentSection = sections[currentIndex]
+
+      if (!currentSection) return
+
+      // Check if the current section can still scroll vertically
+      // We need to check both window scroll and any scrollable containers within the section
+      const windowScrollTop = window.scrollY || document.documentElement.scrollTop
+      const windowScrollHeight = document.documentElement.scrollHeight
+      const windowInnerHeight = window.innerHeight
+      const scrollThreshold = 5 // Small threshold to account for rounding
+
+      // Helper function to check if an element or its scrollable children can scroll
+      const canElementScroll = (element: HTMLElement, direction: 'down' | 'up'): boolean => {
+        // Check the element itself
+        if (element.scrollHeight > element.clientHeight) {
+          if (direction === 'down') {
+            const atBottom = element.scrollTop + element.clientHeight >= element.scrollHeight - scrollThreshold
+            if (!atBottom) return true
+          } else {
+            const atTop = element.scrollTop <= scrollThreshold
+            if (!atTop) return true
+          }
+        }
+
+        // Check all scrollable children
+        const scrollableChildren = Array.from(element.querySelectorAll('*')).filter(
+          (el) => {
+            const htmlEl = el as HTMLElement
+            return htmlEl.scrollHeight > htmlEl.clientHeight && 
+                   (getComputedStyle(htmlEl).overflowY === 'auto' || 
+                    getComputedStyle(htmlEl).overflowY === 'scroll' ||
+                    getComputedStyle(htmlEl).overflow === 'auto' ||
+                    getComputedStyle(htmlEl).overflow === 'scroll')
+          }
+        ) as HTMLElement[]
+
+        for (const child of scrollableChildren) {
+          if (direction === 'down') {
+            const atBottom = child.scrollTop + child.clientHeight >= child.scrollHeight - scrollThreshold
+            if (!atBottom) return true
+          } else {
+            const atTop = child.scrollTop <= scrollThreshold
+            if (!atTop) return true
+          }
+        }
+
+        return false
+      }
+
+      // Check if scrolling down (positive delta)
+      if (delta > 0) {
+        // Check if window can still scroll down
+        const canScrollDown = windowScrollTop + windowInnerHeight < windowScrollHeight - scrollThreshold
+        
+        // Check if section or its children can scroll
+        const sectionCanScroll = canElementScroll(currentSection, 'down')
+        
+        // If we can still scroll vertically, allow normal vertical scrolling
+        if (canScrollDown || sectionCanScroll) {
+          return // Don't prevent default, allow normal vertical scroll
+        }
+      } else {
+        // Scrolling up (negative delta)
+        // Check if window can still scroll up
+        const canScrollUp = windowScrollTop > scrollThreshold
+        
+        // Check if section or its children can scroll
+        const sectionCanScroll = canElementScroll(currentSection, 'up')
+        
+        // If we can still scroll vertically, allow normal vertical scrolling
+        if (canScrollUp || sectionCanScroll) {
+          return // Don't prevent default, allow normal vertical scroll
+        }
+      }
+
+      // Section is fully scrolled, now allow horizontal scrolling
+      e.preventDefault()
+
       const nextIndex = delta > 0 ? Math.min(currentIndex + 1, sections.length - 1) : Math.max(currentIndex - 1, 0)
       const target = sections[nextIndex]
 
