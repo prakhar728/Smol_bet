@@ -80,8 +80,8 @@ function SceneCreate() {
     return (
         <Thread tag="Create">
             <XPost name="Prakhar Ojha" handle="PrakharOjha4" time="2m">
-                <span className="text-[#C3F53B]">@funnyorfud</span> I bet <span className="text-[#C3F53B]">@_fiatisabubble</span> that <b>BTC closes above $64k this Friday 23:59 UTC</b>.
-                {"\n"}Stake: <b>0.02 ETH each</b>. Source: Coinbase daily close.
+                <span className="text-[#C3F53B]">@smol_bet</span> I bet <span className="text-[#C3F53B]">@_fiatisabubble</span> that <b>BTC closes above $64k this Friday 23:59 UTC</b>.
+                {"\n"}Stake: <b>0.02 ETH each on Aurora </b>. Source: Coinbase daily close.
             </XPost>
         </Thread>
     )
@@ -90,11 +90,11 @@ function SceneLock() {
     return (
         <Thread tag="Lock">
             <XPost name="Prakhar Ojha" handle="PrakharOjha4" time="2m">
-                <span className="text-[#C3F53B]">@funnyorfud</span> I bet <span className="text-[#C3F53B]">@_fiatisabubble</span> that <b>BTC closes above $64k this Friday 23:59 UTC</b>.
-                {"\n"}Stake: <b>0.02 ETH each</b>. Source: Coinbase daily close.
+                <span className="text-[#C3F53B]">@smol_bet</span> I bet <span className="text-[#C3F53B]">@_fiatisabubble</span> that <b>BTC closes above $64k this Friday 23:59 UTC</b>.
+                {"\n"}Stake: <b>0.02 ETH each on Aurora</b>. Source: Coinbase daily close.
             </XPost>
             <div className="pl-11">
-                <XPost name="Funny Or Fud" handle="FunnyOrFud" bot time="1m">
+                <XPost name="Smol Bet" handle="smol_bet" bot time="1m">
                     <span className="inline-flex items-center gap-2 text-[#C3F53B] font-semibold">
                         <CheckCircle2 className="size-4" /> Bet detected
                     </span>
@@ -110,6 +110,7 @@ function SceneLock() {
                     <span className="font-mono text-[14px] bg-white/[0.06] px-2 py-1 rounded-md border border-white/12">
                         0x62d6294e7db0b9c88494ab3859d5d2fa0d61a678
                     </span>
+                    {" "} on Aurora network!
                 </XPost>
             </div>
         </Thread>
@@ -122,7 +123,7 @@ function SceneResolve() {
                 Settle
             </XPost>
             <div className="pl-11">
-                <XPost name="Funny Or Fud" handle="FunnyOrFud" bot time="now">
+                <XPost name="Smol Bet" handle="smol_bet" bot time="now">
                     Settling… delegating to <b>NearAI Agent</b>.
                 </XPost>
             </div>
@@ -132,7 +133,7 @@ function SceneResolve() {
 function ScenePayout() {
     return (
         <Thread tag="Payout">
-            <XPost name="Funny Or Fud" handle="FunnyOrFud" bot time="1m">
+            <XPost name="Smol Bet" handle="smol_bet" bot time="1m">
                 <div className="inline-flex items-center gap-2 text-[#C3F53B] font-semibold">
                     <CheckCircle2 className="size-4" /> Resolved
                 </div>

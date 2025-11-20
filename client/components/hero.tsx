@@ -29,7 +29,7 @@ export function Hero() {
               </Button> */}
 
               <Button asChild className="bg-[#C3F53B] text-black hover:bg-[#C3F53B]/90">
-                <Link href="waitlist" target="_blank" rel="noreferrer">Waitlist</Link>
+                <Link href="https://app.youform.com/forms/r18v0jef" target="_blank" rel="noreferrer">Waitlist</Link>
               </Button>
               <Button
                 asChild
@@ -60,16 +60,6 @@ export function Hero() {
               Turning tweets into trustless wagers — no middlemen, just TEE’s and verifiable AI.
             </p>
           </div>
-        </div>
-        
-        <div className="mt-12 md:mt-16 flex justify-center">
-          <Image
-            src="/example_bet.png"
-            alt="Example X post creating a bet"
-            width={800}
-            height={600}
-            className="rounded-lg border border-white/10 shadow-2xl max-w-full h-auto"
-          />
         </div>
       </div>
     </section>

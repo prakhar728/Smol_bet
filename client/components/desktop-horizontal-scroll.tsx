@@ -16,10 +16,20 @@ export function DesktopHorizontalScroll({ className, children }: DesktopHorizont
 
   // Reset vertical scroll when section changes
   const resetVerticalScroll = React.useCallback((targetSection: HTMLElement) => {
-    // Reset window scroll position
-    window.scrollTo({ top: 0, behavior: "smooth" })
-    // Also reset any scrollable containers within the section
-    targetSection.scrollTop = 0
+    // Sections themselves are not scrollable (overflow-hidden), but reset any nested scrollable containers
+    const scrollableChildren = Array.from(targetSection.querySelectorAll('*')).filter(
+      (el) => {
+        const htmlEl = el as HTMLElement
+        return htmlEl.scrollHeight > htmlEl.clientHeight && 
+               (getComputedStyle(htmlEl).overflowY === 'auto' || 
+                getComputedStyle(htmlEl).overflowY === 'scroll' ||
+                getComputedStyle(htmlEl).overflow === 'auto' ||
+                getComputedStyle(htmlEl).overflow === 'scroll')
+      }
+    ) as HTMLElement[]
+    scrollableChildren.forEach(child => {
+      child.scrollTop = 0
+    })
   }, [])
   
   // Listen for horizontal scroll changes to detect section switches
@@ -80,27 +90,13 @@ export function DesktopHorizontalScroll({ className, children }: DesktopHorizont
 
       if (!currentSection) return
 
-      // Check if the current section can still scroll vertically
-      // We need to check both window scroll and any scrollable containers within the section
-      const windowScrollTop = window.scrollY || document.documentElement.scrollTop
-      const windowScrollHeight = document.documentElement.scrollHeight
-      const windowInnerHeight = window.innerHeight
+      // Check if there are any nested scrollable elements that need to be scrolled first
+      // Sections themselves are not scrollable (overflow-hidden), but nested components might be
       const scrollThreshold = 5 // Small threshold to account for rounding
 
-      // Helper function to check if an element or its scrollable children can scroll
-      const canElementScroll = (element: HTMLElement, direction: 'down' | 'up'): boolean => {
-        // Check the element itself
-        if (element.scrollHeight > element.clientHeight) {
-          if (direction === 'down') {
-            const atBottom = element.scrollTop + element.clientHeight >= element.scrollHeight - scrollThreshold
-            if (!atBottom) return true
-          } else {
-            const atTop = element.scrollTop <= scrollThreshold
-            if (!atTop) return true
-          }
-        }
-
-        // Check all scrollable children
+      // Helper function to check if nested scrollable children can scroll
+      const canNestedElementScroll = (element: HTMLElement, direction: 'down' | 'up'): boolean => {
+        // Check all scrollable children (nested components like carousels)
         const scrollableChildren = Array.from(element.querySelectorAll('*')).filter(
           (el) => {
             const htmlEl = el as HTMLElement
@@ -127,31 +123,25 @@ export function DesktopHorizontalScroll({ className, children }: DesktopHorizont
 
       // Check if scrolling down (positive delta)
       if (delta > 0) {
-        // Check if window can still scroll down
-        const canScrollDown = windowScrollTop + windowInnerHeight < windowScrollHeight - scrollThreshold
+        // Check if nested scrollable elements can scroll
+        const nestedCanScroll = canNestedElementScroll(currentSection, 'down')
         
-        // Check if section or its children can scroll
-        const sectionCanScroll = canElementScroll(currentSection, 'down')
-        
-        // If we can still scroll vertically, allow normal vertical scrolling
-        if (canScrollDown || sectionCanScroll) {
+        // If nested elements can still scroll, allow normal vertical scrolling
+        if (nestedCanScroll) {
           return // Don't prevent default, allow normal vertical scroll
         }
       } else {
         // Scrolling up (negative delta)
-        // Check if window can still scroll up
-        const canScrollUp = windowScrollTop > scrollThreshold
+        // Check if nested scrollable elements can scroll
+        const nestedCanScroll = canNestedElementScroll(currentSection, 'up')
         
-        // Check if section or its children can scroll
-        const sectionCanScroll = canElementScroll(currentSection, 'up')
-        
-        // If we can still scroll vertically, allow normal vertical scrolling
-        if (canScrollUp || sectionCanScroll) {
+        // If nested elements can still scroll, allow normal vertical scrolling
+        if (nestedCanScroll) {
           return // Don't prevent default, allow normal vertical scroll
         }
       }
 
-      // Section is fully scrolled, now allow horizontal scrolling
+      // No vertical scrolling needed, allow horizontal scrolling
       e.preventDefault()
 
       const nextIndex = delta > 0 ? Math.min(currentIndex + 1, sections.length - 1) : Math.max(currentIndex - 1, 0)
@@ -174,14 +164,38 @@ export function DesktopHorizontalScroll({ className, children }: DesktopHorizont
     }
   }, [resetVerticalScroll])
 
+  // Prevent body scroll on desktop and set fixed height
+  React.useEffect(() => {
+    if (typeof window === "undefined") return
+    if (!window.matchMedia("(min-width: 768px)").matches) return
+
+    // Set body and html to fixed height to prevent document-level scrolling
+    const originalBodyOverflow = document.body.style.overflow
+    const originalHtmlOverflow = document.documentElement.style.overflow
+    const originalBodyHeight = document.body.style.height
+    const originalHtmlHeight = document.documentElement.style.height
+
+    document.body.style.overflow = "hidden"
+    document.documentElement.style.overflow = "hidden"
+    document.body.style.height = "100vh"
+    document.documentElement.style.height = "100vh"
+
+    return () => {
+      document.body.style.overflow = originalBodyOverflow
+      document.documentElement.style.overflow = originalHtmlOverflow
+      document.body.style.height = originalBodyHeight
+      document.documentElement.style.height = originalHtmlHeight
+    }
+  }, [])
+
   return (
     <div
       ref={containerRef}
       onWheel={onWheel}
       className={cn(
         // Mobile: vertical stack with normal vertical scrolling
-        // Desktop (md+): horizontal row with snapping and hidden scrollbars
-        "flex-1 flex flex-col overflow-y-auto md:flex-row md:overflow-y-hidden md:overflow-x-auto md:snap-x md:snap-mandatory scroll-smooth md:[&::-webkit-scrollbar]:hidden md:[scrollbar-width:none] md:[-ms-overflow-style:'none']",
+        // Desktop (md+): horizontal row with snapping and hidden scrollbars, takes remaining height after header and footer
+        "flex-1 flex flex-col overflow-y-auto md:flex-row md:overflow-hidden md:overflow-x-auto md:snap-x md:snap-mandatory scroll-smooth md:[&::-webkit-scrollbar]:hidden md:[scrollbar-width:none] md:[-ms-overflow-style:'none']",
         className
       )}
     >

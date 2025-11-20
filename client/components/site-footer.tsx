@@ -4,7 +4,7 @@ import { Separator } from "@/components/ui/separator"
 
 export function SiteFooter() {
   return (
-    <footer className="border-t border-white/10">
+    <footer className="sticky bottom-0 z-40 border-t border-white/10 backdrop-blur supports-[backdrop-filter]:bg-charcoal/80 bg-charcoal/70">
       <div className="container px-4 md:px-6 py-10">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div className="text-sm text-muted">© {new Date().getFullYear()} SMOL BET</div>
@@ -15,8 +15,6 @@ export function SiteFooter() {
             </FooterLink>
           </nav>
         </div>
-        <Separator className="my-6 bg-white/10" />
-        <p className="text-xs text-muted">SMOL BET is experimental software. Use responsibly.</p>
       </div>
     </footer>
   )

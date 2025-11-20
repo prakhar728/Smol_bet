@@ -81,7 +81,7 @@ export default function HowItWorksPage() {
   return (
     <div className="bg-[#1B1B1B] text-off flex flex-col">
       <main className="flex-1">
-        <Section className="py-16 md:py-20">
+        <Section className="py-16 md:py-10">
           <div className="container px-4 md:px-8 space-y-8">
             {/* Heading + sub */}
             <div className="max-w-2xl">

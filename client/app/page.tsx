@@ -1,17 +1,13 @@
-import Link from "next/link"
 import type { Metadata } from "next"
-import { ArrowDownRight, ArrowRight, ExternalLink } from "lucide-react"
 
-import { Button } from "@/components/ui/button"
 import { Hero } from "@/components/hero"
-import { ValueGrid } from "@/components/value-grid"
 import { SocialProof } from "@/components/social-proof"
-import { Timeline } from "@/components/timeline"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 import { Section } from "@/components/section"
-import { copy } from "@/constants/copy"
 import { ValueCarousel } from "@/components/value-carousel"
+import { CTASection } from "@/components/cta-section"
+import { TweetSection } from "@/components/tweet-section"
 import HowItWorksPage from "../components/how-it-works"
 import { DesktopHorizontalScroll } from "@/components/desktop-horizontal-scroll"
 
@@ -43,43 +39,86 @@ export const metadata: Metadata = {
 
 export default function Page() {
   return (
-    <div className="min-h-[100dvh] bg-charcoal text-off flex flex-col">
+    <div className="min-h-[100dvh] md:h-screen bg-charcoal text-off flex flex-col">
       <SiteHeader />
+
       <DesktopHorizontalScroll>
-        <section className="snap-section md:snap-start md:shrink-0 md:w-screen" data-snap-section>
+
+        <section
+          className="snap-section md:snap-start md:shrink-0 md:w-screen md:h-full md:overflow-hidden md:min-h-0"
+          data-snap-section
+        >
           <Hero />
         </section>
 
-        <section className="snap-section md:snap-start md:shrink-0 md:w-screen" data-snap-section>
-          <Section id="how-it-works" className="py-16 md:py-24">
-            <div className="container px-4 md:px-6 space-y-6">
-              <HowItWorksPage />
-            </div>
-          </Section>
-        </section>
-        
-        <section className="snap-section md:snap-start md:shrink-0 md:w-screen" data-snap-section>
-          <Section id="values" className="py-16 md:py-24">
-            <div className="container px-4 md:px-6">
-              <ValueCarousel />
-            </div>
-          </Section>
-        </section>
-
-        <section className="snap-section md:snap-start md:shrink-0 md:w-screen" data-snap-section>
-          <Section className="py-10">
-            <div className="container px-4 md:px-6">
-              <SocialProof />
+        <section
+          className="snap-section md:snap-start md:shrink-0 md:w-screen md:h-full md:overflow-hidden md:min-h-0"
+          data-snap-section
+        >
+          <Section id="how-it-works" className="p-0">
+            <div className="h-full flex items-center">
+              <div className="container px-4 md:px-6 space-y-6">
+                <HowItWorksPage />
+              </div>
             </div>
           </Section>
         </section>
 
-
-
-        <section className="snap-section md:snap-start md:shrink-0 md:w-screen" data-snap-section>
-          <SiteFooter />
+        <section
+          className="snap-section md:snap-start md:shrink-0 md:w-screen md:h-full md:overflow-hidden md:min-h-0"
+          data-snap-section
+        >
+          <Section id="values" className="p-0">
+            <div className="h-full flex items-center">
+              <div className="container px-4 md:px-6">
+                <ValueCarousel />
+              </div>
+            </div>
+          </Section>
         </section>
+
+        <section
+          className="snap-section md:snap-start md:shrink-0 md:w-screen md:h-full md:overflow-hidden md:min-h-0"
+          data-snap-section
+        >
+          <Section className="p-0">
+            <div className="h-full flex items-center">
+              <div className="container px-4 md:px-6">
+                <SocialProof />
+              </div>
+            </div>
+          </Section>
+        </section>
+
+        <section
+          className="snap-section md:snap-start md:shrink-0 md:w-screen md:h-full md:overflow-hidden md:min-h-0"
+          data-snap-section
+        >
+          <Section className="p-0">
+            <div className="h-full flex items-center">
+              <div className="container px-4 md:px-6">
+                <TweetSection />
+              </div>
+            </div>
+          </Section>
+        </section>
+
+        <section
+          className="snap-section md:snap-start md:shrink-0 md:w-screen md:h-full md:overflow-hidden md:min-h-0"
+          data-snap-section
+        >
+          <Section className="p-0">
+            <div className="h-full flex items-center">
+              <div className="container px-4 md:px-6">
+                <CTASection />
+              </div>
+            </div>
+          </Section>
+        </section>
+
       </DesktopHorizontalScroll>
+
+      <SiteFooter />
     </div>
   )
 }

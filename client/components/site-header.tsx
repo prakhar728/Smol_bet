@@ -66,7 +66,7 @@ export function SiteHeader() {
             asChild
             className="bg-lime text-charcoal hover:bg-lime/90 focus-visible:ring-lime"
           >
-            <Link href="/waitlist" aria-label="waitlist">
+            <Link href="https://app.youform.com/forms/r18v0jef" aria-label="waitlist">
               Waitlist
               <ExternalLink className="ml-2 h-4 w-4" />
             </Link>

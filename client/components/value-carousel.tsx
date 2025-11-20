@@ -1,9 +1,10 @@
 "use client"
 
 import * as React from "react"
-import { motion, useReducedMotion } from "framer-motion"
+import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Twitter, ShieldCheck, Cpu, Link2, ChevronLeft, ChevronRight } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Twitter, ShieldCheck, Cpu, Link2 } from "lucide-react"
 import { copy } from "@/constants/copy"
 
 const items = [
@@ -13,129 +14,85 @@ const items = [
   { icon: Link2,       title: copy.values[3].title, desc: copy.values[3].desc },
 ]
 
-export function ValueCarousel({
-  interval = 4500,
-  autoplay = true,
-}: { interval?: number; autoplay?: boolean }) {
-  const [index, setIndex] = React.useState(0)
-  const count = items.length
-  const reduce = useReducedMotion()
-  const hoverRef = React.useRef(false)
-
-  const go = (n: number) => setIndex((p) => (p + n + count) % count)
-  const to = (n: number) => setIndex(((n % count) + count) % count)
-
-  // Autoplay (paused on hover / reduced motion / tab hidden)
-  React.useEffect(() => {
-    if (!autoplay || reduce) return
-    const tick = () => {
-      if (!hoverRef.current && document.visibilityState === "visible") go(1)
-    }
-    const id = setInterval(tick, interval)
-    return () => clearInterval(id)
-  }, [autoplay, reduce, interval])
-
+export function ValueCarousel() {
   return (
-    <div
-      role="region"
-      aria-roledescription="carousel"
-      aria-label="Features"
-      className="relative"
-      onMouseEnter={() => (hoverRef.current = true)}
-      onMouseLeave={() => (hoverRef.current = false)}
-    >
-      {/* Track */}
-      <div className="overflow-hidden rounded-2xl">
-        <motion.div
-          className="flex"
-          animate={{ x: `-${index * 100}%` }}
-          transition={{ type: "spring", stiffness: 300, damping: 36 }}
-          drag="x"
-          dragConstraints={{ left: 0, right: 0 }}
-          onDragEnd={(_, info) => {
-            const swipe = info.offset.x + info.velocity.x * 0.2
-            if (swipe < -80) go(1)
-            else if (swipe > 80) go(-1)
-          }}
-          style={{ touchAction: "pan-y" }}
-        >
+    <div className="w-full py-8 md:py-12">
+      <div className="max-w-6xl mx-auto space-y-8">
+        {/* Heading + sub */}
+        <div className="max-w-2xl">
+          <div className="text-[11px] leading-4 tracking-[0.14em] uppercase text-[#C3F53B]">
+            Features
+          </div>
+          <h1 className="mt-2 text-3xl md:text-4xl font-black tracking-tight text-off/95">
+            Why SMOL BET
+          </h1>
+          <p className="text-white/70 mt-2">
+            Trustless wagers powered by TEE and verifiable AI. No middlemen, no custody, just code.
+          </p>
+        </div>
+
+        {/* Features Grid */}
+        <div className="grid sm:grid-cols-2 gap-4 md:gap-6">
           {items.map((it, i) => (
-            <div
+            <Card
               key={it.title}
-              aria-roledescription="slide"
-              aria-label={`${i + 1} of ${count}`}
-              className="min-w-full"
+              className="relative border border-white/12 bg-white/[0.02] rounded-2xl hover:border-[#C3F53B]/30 hover:bg-white/[0.04] transition-all duration-300 group overflow-hidden h-full"
             >
-              <Card className="relative mx-auto max-w-3xl border border-white/12 bg-white/[0.02] rounded-2xl">
-                {/* subtle lime tint + grid */}
-                <div
-                  aria-hidden
-                  className="pointer-events-none absolute inset-0 opacity-80 rounded-2xl"
-                  style={{
-                    backgroundImage: [
-                      "radial-gradient(800px 240px at 18% -12%, rgba(195,245,59,0.06), rgba(0,0,0,0))",
-                      "radial-gradient(#222 1px, transparent 1px)",
-                    ].join(", "),
-                    backgroundSize: "auto, 22px 22px",
-                  }}
-                />
-                <CardHeader className="relative z-10 pb-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <span className="grid place-items-center size-9 rounded-lg bg-[#C3F53B]/12 text-[#C3F53B]">
-                        <it.icon className="size-5" />
-                      </span>
-                      <CardTitle className="text-off/95 font-semibold tracking-tight">
-                        {it.title}
-                      </CardTitle>
-                    </div>
-                    <span className="text-[11px] leading-4 tracking-[0.14em] uppercase text-[#C3F53B]">
-                      {String(i + 1).padStart(2, "0")} / {String(count).padStart(2, "0")}
+              {/* subtle lime tint + grid */}
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-0 opacity-60 rounded-2xl"
+                style={{
+                  backgroundImage: [
+                    "radial-gradient(600px 200px at 20% -10%, rgba(195,245,59,0.08), rgba(0,0,0,0))",
+                    "radial-gradient(#222 1px, transparent 1px)",
+                  ].join(", "),
+                  backgroundSize: "auto, 24px 24px",
+                }}
+              />
+              {/* Hover glow effect */}
+              <div
+                aria-hidden
+                className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl"
+                style={{
+                  background: "radial-gradient(400px 200px at 50% 50%, rgba(195,245,59,0.05), rgba(0,0,0,0))",
+                }}
+              />
+              {/* Soft inner ring for depth */}
+              <div
+                aria-hidden
+                className="absolute inset-0 rounded-2xl ring-1 ring-inset ring-white/5 group-hover:ring-[#C3F53B]/20 transition-all duration-300"
+              />
+              <CardHeader className="relative z-10 pb-3 pt-5 px-5 md:px-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="grid place-items-center size-11 rounded-lg bg-[#C3F53B]/12 text-[#C3F53B] group-hover:bg-[#C3F53B]/20 group-hover:scale-105 transition-all duration-300 shadow-sm">
+                      <it.icon className="size-5" />
                     </span>
+                    <CardTitle className="text-off/95 font-semibold tracking-tight text-lg md:text-xl">
+                      {it.title}
+                    </CardTitle>
                   </div>
-                </CardHeader>
-                <CardContent className="relative z-10">
-                  <p className="text-white/75 text-base">{it.desc}</p>
-                </CardContent>
-              </Card>
-            </div>
+                  {/* Chevron accent */}
+                  <svg 
+                    viewBox="0 0 24 24" 
+                    className="size-5 text-[#C3F53B] opacity-60 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-300"
+                    fill="none" 
+                    stroke="currentColor" 
+                    strokeWidth="2"
+                  >
+                    <path d="M8 4l8 8-8 8" />
+                  </svg>
+                </div>
+              </CardHeader>
+              <CardContent className="relative z-10 px-5 md:px-6 pb-5 md:pb-6">
+                <p className="text-white/70 text-sm md:text-base leading-relaxed">
+                  {it.desc}
+                </p>
+              </CardContent>
+            </Card>
           ))}
-        </motion.div>
-      </div>
-
-      {/* Arrows */}
-      <div className="pointer-events-none absolute inset-y-0 left-0 right-0 flex items-center justify-between px-1">
-        <button
-          type="button"
-          aria-label="Previous feature"
-          onClick={() => go(-1)}
-          className="pointer-events-auto grid place-items-center size-9 rounded-xl border border-white/12 bg-white/[0.02] hover:bg-white/[0.06] transition"
-        >
-          <ChevronLeft className="size-5 text-[#C3F53B]" />
-        </button>
-        <button
-          type="button"
-          aria-label="Next feature"
-          onClick={() => go(1)}
-          className="pointer-events-auto grid place-items-center size-9 rounded-xl border border-white/12 bg-white/[0.02] hover:bg-white/[0.06] transition"
-        >
-          <ChevronRight className="size-5 text-[#C3F53B]" />
-        </button>
-      </div>
-
-      {/* Dots */}
-      <div className="mt-4 flex items-center justify-center gap-2">
-        {items.map((_, i) => (
-          <button
-            key={i}
-            aria-label={`Go to slide ${i + 1}`}
-            aria-current={i === index}
-            onClick={() => to(i)}
-            className={`h-1.5 rounded-full transition-all ${
-              i === index ? "w-8 bg-[#C3F53B]" : "w-3 bg-white/25 hover:bg-white/40"
-            }`}
-          />
-        ))}
+        </div>
       </div>
     </div>
   )
