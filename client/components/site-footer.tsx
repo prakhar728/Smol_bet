@@ -10,7 +10,7 @@ export function SiteFooter() {
           <div className="text-sm text-muted">© {new Date().getFullYear()} SMOL BET</div>
           <nav className="flex items-center gap-6">
             <FooterLink href="#how-it-works">How it works</FooterLink>
-            <FooterLink href="https://x.com/funnyorfud" external>
+            <FooterLink href="https://x.com/smol_bet" external>
               X Profile
             </FooterLink>
           </nav>
