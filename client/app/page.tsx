@@ -33,7 +33,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "SMOL BET — Trustless wagers from tweets",
     description: "Turning tweets into trustless wagers — no middlemen, just TEE + verifiable AI.",
-    images: ["/smol-bet-og.png"],
+    images: ["/logo.png"],
   },
 }
 
