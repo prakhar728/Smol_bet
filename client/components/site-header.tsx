@@ -47,7 +47,7 @@ export function SiteHeader() {
 
         {/* Actions */}
         <div className="flex items-center gap-3">
-          <Button
+          {/* <Button
             asChild
             className="bg-lime text-charcoal hover:bg-lime/90 focus-visible:ring-lime"
           >
@@ -60,7 +60,7 @@ export function SiteHeader() {
               View the bets
               <ExternalLink className="ml-2 h-4 w-4" />
             </a>
-          </Button>
+          </Button> */}
 
           <Button
             asChild
