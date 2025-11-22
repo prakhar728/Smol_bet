@@ -8,15 +8,15 @@ export function TweetSection() {
     <div className="w-full py-8 md:py-12">
       <div className="max-w-4xl mx-auto space-y-8">
         {/* Heading */}
-        <div className="text-center">
-          <h2 className="text-[6vw] sm:text-3xl md:text-4xl lg:text-5xl font-black tracking-tight text-off/95">
+        <div className="text-center px-4 md:px-0">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black tracking-tight text-off/95">
             Yes it's that easy
           </h2>
         </div>
 
         {/* Tweet Image */}
-        <div className="relative flex justify-center">
-          <div className="relative rounded-2xl overflow-hidden border border-white/12 bg-white/[0.02] p-4 md:p-6">
+        <div className="relative flex justify-center px-4 md:px-0">
+          <div className="relative rounded-2xl overflow-hidden border border-white/12 bg-white/[0.02] p-3 md:p-4 lg:p-6 w-full max-w-full">
             {/* subtle lime tint + grid */}
             <div
               aria-hidden

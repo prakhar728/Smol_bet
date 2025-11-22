@@ -87,6 +87,16 @@
   body {
     @apply bg-background text-foreground;
   }
+  /* Ensure proper text wrapping on mobile */
+  * {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+  /* Prevent horizontal overflow */
+  html, body {
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
 }
 
 @keyframes chevronSpin {

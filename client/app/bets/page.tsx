@@ -131,15 +131,24 @@ export default function ShowcaseBets() {
   return (
     <div className="min-h-[100dvh] bg-charcoal text-off">
       <header className="sticky top-0 z-20 border-b border-white/10 backdrop-blur supports-[backdrop-filter]:bg-charcoal/70">
-        <div className="container mx-auto px-4 md:px-6 py-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-lg md:text-2xl font-black tracking-tight">Showcase Bets</h1>
-            <p className="text-sm text-white/60">
-              Reading from <span className="font-mono">{STORAGE_CONTRACT_ID}</span>
-              {total != null && <> — total: <span className="font-mono">{total}</span></>}
+        <div className="container mx-auto px-4 md:px-6 py-3 md:py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-base md:text-lg lg:text-2xl font-black tracking-tight">Showcase Bets</h1>
+            <p className="text-xs md:text-sm text-white/60 break-words">
+              <span className="hidden sm:inline">Reading from </span>
+              <span className="font-mono text-[10px] sm:text-xs">{STORAGE_CONTRACT_ID}</span>
+              {total != null && (
+                <>
+                  <span className="hidden sm:inline"> — </span>
+                  <span className="sm:hidden"> • </span>
+                  total: <span className="font-mono">{total}</span>
+                </>
+              )}
             </p>
           </div>
-          <ConnectWalletButton />
+          <div className="shrink-0 self-end sm:self-auto">
+            <ConnectWalletButton />
+          </div>
         </div>
       </header>
 
@@ -204,19 +213,19 @@ export default function ShowcaseBets() {
                           <div className="mt-3 space-y-2">
                             <div>
                               <div className="text-[11px] uppercase tracking-wide text-white/50">Terms</div>
-                              <p className="text-sm md:text-base leading-relaxed break-words">{bet.terms}</p>
+                              <p className="text-sm md:text-base leading-relaxed break-words overflow-wrap-anywhere">{bet.terms}</p>
                             </div>
 
                             {(bet.resolution && bet.resolution.trim().length > 0) && (
                               <div className="pt-2 border-t border-white/10">
                                 <div className="text-[11px] uppercase tracking-wide text-white/50">Resolution</div>
-                                <p className="text-sm md:text-base leading-relaxed">{bet.resolution}</p>
+                                <p className="text-sm md:text-base leading-relaxed break-words overflow-wrap-anywhere">{bet.resolution}</p>
                               </div>
                             )}
 
                             <div className="pt-2 border-t border-white/10">
                               <div className="text-[11px] uppercase tracking-wide text-white/50 mb-2">Details</div>
-                              <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-white/70">
+                              <dl className="grid grid-cols-2 gap-x-2 md:gap-x-4 gap-y-1 text-xs text-white/70">
                                 {bet.amount && (
                                   <>
                                     <dt className="text-white/50">Amount</dt>
@@ -232,19 +241,19 @@ export default function ShowcaseBets() {
                                 {bet.currentid && (
                                   <>
                                     <dt className="text-white/50">Current ID</dt>
-                                    <dd className="font-mono break-all">{bet.currentid}</dd>
+                                    <dd className="font-mono break-all text-[10px] md:text-xs overflow-wrap-anywhere">{bet.currentid}</dd>
                                   </>
                                 )}
                                 {bet.parentid && (
                                   <>
                                     <dt className="text-white/50">Parent ID</dt>
-                                    <dd className="font-mono break-all">{bet.parentid}</dd>
+                                    <dd className="font-mono break-all text-[10px] md:text-xs overflow-wrap-anywhere">{bet.parentid}</dd>
                                   </>
                                 )}
                                 {bet.remarks && (
                                   <>
                                     <dt className="text-white/50">Remarks</dt>
-                                    <dd className="break-words">{bet.remarks}</dd>
+                                    <dd className="break-words overflow-wrap-anywhere">{bet.remarks}</dd>
                                   </>
                                 )}
                                 {bet.currency && !bet.amount && (
@@ -273,7 +282,7 @@ export default function ShowcaseBets() {
                     <Button
                       onClick={loadMore}
                       variant="ghost"
-                      className="h-9 px-4 border border-white/15 hover:bg-white/10"
+                      className="h-9 md:h-10 px-4 md:px-5 min-h-[36px] md:min-h-[40px] text-xs md:text-sm border border-white/15 hover:bg-white/10"
                       disabled={loadingPage}
                     >
                       {loadingPage ? "Loading…" : "Load more"}

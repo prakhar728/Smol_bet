@@ -13,7 +13,7 @@ export function SiteHeader() {
 
   return (
     <header className="sticky top-0 z-40 backdrop-blur supports-[backdrop-filter]:bg-charcoal/80 bg-charcoal/70 border-b border-white/10">
-      <div className="container px-4 md:px-6 h-14 flex items-center justify-between">
+      <div className="container px-4 md:px-6 h-14 md:h-16 flex items-center justify-between gap-2">
         {/* Logo */}
         <Link
           href="/"
@@ -24,7 +24,7 @@ export function SiteHeader() {
             alt="SMOL BET"
             width={120}
             height={40}
-            className="h-8 w-auto"
+            className="h-7 md:h-8 w-auto"
             priority
           />
 
@@ -46,7 +46,7 @@ export function SiteHeader() {
         </nav>
 
         {/* Actions */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 md:gap-3">
           {/* <Button
             asChild
             className="bg-lime text-charcoal hover:bg-lime/90 focus-visible:ring-lime"
@@ -64,11 +64,12 @@ export function SiteHeader() {
 
           <Button
             asChild
-            className="bg-lime text-charcoal hover:bg-lime/90 focus-visible:ring-lime"
+            className="bg-lime text-charcoal hover:bg-lime/90 focus-visible:ring-lime text-sm md:text-base px-3 md:px-4 h-9 md:h-10"
           >
             <Link href="https://app.youform.com/forms/r18v0jef" aria-label="waitlist">
-              Waitlist
-              <ExternalLink className="ml-2 h-4 w-4" />
+              <span className="hidden sm:inline">Waitlist</span>
+              <span className="sm:hidden">Join</span>
+              <ExternalLink className="ml-1.5 md:ml-2 h-3.5 w-3.5 md:h-4 md:w-4" />
             </Link>
           </Button>
         </div>

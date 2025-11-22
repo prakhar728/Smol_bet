@@ -18,8 +18,8 @@ export function Hero() {
               id="hero-heading"
               className="uppercase font-black tracking-tight leading-[0.82] text-[#C3F53B]"
             >
-              <span className="block text-[22vw] md:text-[160px] lg:text-[240px]">SMOL</span>
-              <span className="block text-[22vw] md:text-[160px] lg:text-[240px]">BET</span>
+              <span className="block whitespace-nowrap text-[22vw] md:text-[160px] lg:text-[240px]">SMOL</span>
+              <span className="block whitespace-nowrap text-[22vw] md:text-[160px] lg:text-[240px]">BET</span>
             </h1>
 
             {/* CTAs (matte, no glow) */}
@@ -28,15 +28,18 @@ export function Hero() {
                 <Link href="https://x.com/funnyorfud" target="_blank" rel="noreferrer">Try the Bot</Link>
               </Button> */}
 
-              <Button asChild className="bg-[#C3F53B] text-black hover:bg-[#C3F53B]/90">
+              <Button asChild className="bg-[#C3F53B] text-black hover:bg-[#C3F53B]/90 min-h-[44px] text-sm md:text-base px-4 md:px-6">
                 <Link href="https://app.youform.com/forms/r18v0jef" target="_blank" rel="noreferrer">Waitlist</Link>
               </Button>
               <Button
                 asChild
                 variant="ghost"
-                className="border border-white/15 text-white/90 hover:bg-white/5"
+                className="border border-white/15 text-white/90 hover:bg-white/5 min-h-[44px] text-sm md:text-base px-4 md:px-6"
               >
-                <Link href="#how-it-works">See How It Works</Link>
+                <Link href="#how-it-works">
+                  <span className="hidden sm:inline">See How It Works</span>
+                  <span className="sm:hidden">How It Works</span>
+                </Link>
               </Button>
             </div>
           </div>
@@ -56,8 +59,8 @@ export function Hero() {
             </div>
 
             {/* Bottom-right tagline */}
-            <p className="absolute bottom-0 right-0 max-w-[42ch] text-[#C3F53B]/85 text-base md:text-xl leading-snug">
-              Turning tweets into trustless wagers — no middlemen, just TEE’s and verifiable AI.
+            <p className="absolute bottom-0 right-0 max-w-[42ch] text-[#C3F53B]/85 text-sm md:text-base lg:text-xl leading-snug px-2 md:px-0">
+              Turning tweets into trustless wagers — no middlemen, just TEE's and verifiable AI.
             </p>
           </div>
         </div>

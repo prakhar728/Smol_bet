@@ -53,15 +53,17 @@ export default function AICampaignPage() {
   return (
     <div className="min-h-[100dvh] bg-charcoal text-off flex flex-col">
       <header className="sticky top-0 z-20 border-b border-white/10 backdrop-blur supports-[backdrop-filter]:bg-charcoal/70">
-        <div className="container mx-auto px-4 md:px-6 py-4 flex items-center justify-between">
-          <h1 className="text-lg md:text-2xl font-black tracking-tight">AI Test Campaign</h1>
-          <ConnectWalletButton />
+        <div className="container mx-auto px-4 md:px-6 py-3 md:py-4 flex items-center justify-between gap-3">
+          <h1 className="text-base md:text-lg lg:text-2xl font-black tracking-tight truncate">AI Test Campaign</h1>
+          <div className="shrink-0">
+            <ConnectWalletButton />
+          </div>
         </div>
       </header>
 
       <main className="container mx-auto px-4 md:px-6 py-6 md:py-10 flex-1 space-y-8">
         <section className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 md:p-6 shadow-[0_8px_30px_rgba(0,0,0,0.12)]">
-          <div className="flex items-start gap-4">
+          <div className="flex flex-col md:flex-row items-stretch md:items-start gap-4">
             <div className="w-full">
               <label htmlFor="bet-terms" className="sr-only">Bet terms</label>
               <textarea
@@ -83,10 +85,11 @@ export default function AICampaignPage() {
             <Button
               onClick={postTerm}
               disabled={!canPost}
-              className="shrink-0 bg-[#C3F53B] text-black hover:bg-[#C3F53B]/90 disabled:opacity-50 rounded-xl h-[44px] md:h-[48px] px-4 md:px-5 transition"
+              className="shrink-0 bg-[#C3F53B] text-black hover:bg-[#C3F53B]/90 disabled:opacity-50 rounded-xl h-[44px] md:h-[48px] px-4 md:px-5 transition min-h-[44px]"
               title={!signedAccountId ? "Connect wallet to post" : overLimit ? "Too many characters" : "Post this term"}
             >
-              Post this term
+              <span className="hidden sm:inline">Post this term</span>
+              <span className="sm:hidden">Post</span>
             </Button>
           </div>
           {!signedAccountId && <p className="mt-3 text-xs text-white/60">Connect your NEAR wallet to submit.</p>}
@@ -99,7 +102,7 @@ export default function AICampaignPage() {
               Submitted Bets <span className="text-white/40 font-normal">({bets.length})</span>
             </h2>
             {hasMore && (
-              <Button onClick={loadMore} variant="ghost" className="h-8 px-3 border border-white/15 hover:bg-white/10" disabled={loading}>
+              <Button onClick={loadMore} variant="ghost" className="h-9 md:h-10 px-4 md:px-5 min-h-[36px] md:min-h-[40px] text-xs md:text-sm border border-white/15 hover:bg-white/10" disabled={loading}>
                 {loading ? "Loading…" : "Load more"}
               </Button>
             )}
@@ -133,11 +136,11 @@ export default function AICampaignPage() {
                       <div className="mt-3 space-y-2">
                         <div>
                           <div className="text-[11px] uppercase tracking-wide text-white/50">Terms</div>
-                          <p className="text-sm md:text-base leading-relaxed">{bet.terms}</p>
+                          <p className="text-sm md:text-base leading-relaxed break-words overflow-wrap-anywhere">{bet.terms}</p>
                         </div>
                         <div className="pt-2 border-t border-white/10">
                           <div className="text-[11px] uppercase tracking-wide text-white/50">Resolution</div>
-                          <p className="text-sm md:text-base leading-relaxed">
+                          <p className="text-sm md:text-base leading-relaxed break-words overflow-wrap-anywhere">
                             {bet.resolution || <span className="text-white/50">— not resolved yet —</span>}
                           </p>
                         </div>
@@ -146,12 +149,17 @@ export default function AICampaignPage() {
                       <div className="mt-4 flex justify-end">
                         <Button
                           variant="ghost"
-                          className="border border-white/15 hover:bg-white/10 rounded-lg h-8 px-3"
+                          className="border border-white/15 hover:bg-white/10 rounded-lg h-9 md:h-10 px-3 md:px-4 min-h-[36px] md:min-h-[40px] text-xs md:text-sm"
                           onClick={() => requestResolve(bet.bet_id)}
                           disabled={true}
                           title={resolved ? "Already resolved" : "Request AI resolution"}
                         >
-                          {resolvingId === bet.bet_id ? "Resolving…" : resolved ? "Resolved" : "Request Resolve feature is upcoming"}
+                          <span className="hidden sm:inline">
+                            {resolvingId === bet.bet_id ? "Resolving…" : resolved ? "Resolved" : "Request Resolve feature is upcoming"}
+                          </span>
+                          <span className="sm:hidden">
+                            {resolvingId === bet.bet_id ? "Resolving…" : resolved ? "Resolved" : "Upcoming"}
+                          </span>
                         </Button>
                       </div>
                     </article>

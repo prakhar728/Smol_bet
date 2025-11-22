@@ -240,34 +240,34 @@ export function HowItWorksInline({
                     <button
                         key={s.key}
                         onClick={() => to(idx)}
-                        className={`rounded-lg px-3.5 py-2 text-sm uppercase tracking-wide transition
+                        className={`rounded-lg px-2.5 md:px-3.5 py-2 text-xs md:text-sm uppercase tracking-wide transition min-h-[36px] md:min-h-[40px]
               ${idx === i ? "bg-[#C3F53B] text-black" : "text-white/80 hover:text-white"}`}
                         aria-current={idx === i}
                     >
                         {s.label}
                     </button>
                 ))}
-                <div className="ml-auto flex items-center gap-2">
+                <div className="ml-auto flex items-center gap-1.5 md:gap-2">
                     <button
                         onClick={() => setPlaying((p) => !p)}
                         aria-label={playing ? "Pause autoplay" : "Play autoplay"}
-                        className="grid place-items-center h-8 px-3 rounded-lg border border-white/12 bg-white/[0.02] hover:bg-white/[0.06]"
+                        className="grid place-items-center h-8 md:h-9 px-2 md:px-3 rounded-lg border border-white/12 bg-white/[0.02] hover:bg-white/[0.06] min-h-[36px] md:min-h-[40px]"
                     >
                         {playing ? (
-                            <span className="inline-flex items-center gap-1 text-off/90">
-                                <Pause className="size-4 text-[#C3F53B]" /> Pause
+                            <span className="inline-flex items-center gap-1 text-off/90 text-xs md:text-sm">
+                                <Pause className="size-3.5 md:size-4 text-[#C3F53B]" /> <span className="hidden sm:inline">Pause</span>
                             </span>
                         ) : (
-                            <span className="inline-flex items-center gap-1 text-off/90">
-                                <Play className="size-4 text-[#C3F53B]" /> Play
+                            <span className="inline-flex items-center gap-1 text-off/90 text-xs md:text-sm">
+                                <Play className="size-3.5 md:size-4 text-[#C3F53B]" /> <span className="hidden sm:inline">Play</span>
                             </span>
                         )}
                     </button>
-                    <button onClick={() => go(-1)} aria-label="Previous" className="grid place-items-center size-8 rounded-lg border border-white/12 bg-white/[0.02] hover:bg-white/[0.06]">
-                        <ChevronLeft className="size-4 text-[#C3F53B]" />
+                    <button onClick={() => go(-1)} aria-label="Previous" className="grid place-items-center size-8 md:size-9 rounded-lg border border-white/12 bg-white/[0.02] hover:bg-white/[0.06] min-h-[36px] md:min-h-[40px]">
+                        <ChevronLeft className="size-3.5 md:size-4 text-[#C3F53B]" />
                     </button>
-                    <button onClick={() => go(1)} aria-label="Next" className="grid place-items-center size-8 rounded-lg border border-white/12 bg-white/[0.02] hover:bg-white/[0.06]">
-                        <ChevronRight className="size-4 text-[#C3F53B]" />
+                    <button onClick={() => go(1)} aria-label="Next" className="grid place-items-center size-8 md:size-9 rounded-lg border border-white/12 bg-white/[0.02] hover:bg-white/[0.06] min-h-[36px] md:min-h-[40px]">
+                        <ChevronRight className="size-3.5 md:size-4 text-[#C3F53B]" />
                     </button>
                 </div>
             </div>

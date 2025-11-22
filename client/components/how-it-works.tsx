@@ -88,10 +88,10 @@ export default function HowItWorksPage() {
               <div className="text-[11px] leading-4 tracking-[0.14em] uppercase text-[#C3F53B]">
                 Flow
               </div>
-              <h1 className="mt-2 text-3xl md:text-4xl font-black tracking-tight text-off/95">
+              <h1 className="mt-2 text-2xl sm:text-3xl md:text-4xl font-black tracking-tight text-off/95">
                 How it works
               </h1>
-              <p className="text-white/70 mt-2">{copy.how.subtitle}</p>
+              <p className="text-white/70 mt-2 text-sm md:text-base">{copy.how.subtitle}</p>
             </div>
 
             <HowItWorksInline />

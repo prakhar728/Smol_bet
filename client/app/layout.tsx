@@ -8,7 +8,12 @@ export const metadata: Metadata = {
   title: "Smol Bet",
   description: "Decentralized betting dApp on NEAR",
   generator: "v0.dev",
-  keywords: ["NEAR", "betting", "AI", "dApp"], 
+  keywords: ["NEAR", "betting", "AI", "dApp"],
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 5,
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

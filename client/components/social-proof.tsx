@@ -51,10 +51,10 @@ export function SocialProof({
           <div className="text-[11px] leading-4 tracking-[0.14em] uppercase text-[#C3F53B]">
             Partners & Ecosystem
           </div>
-          <h1 className="mt-2 text-3xl md:text-4xl font-black tracking-tight text-off/95">
+          <h1 className="mt-2 text-2xl sm:text-3xl md:text-4xl font-black tracking-tight text-off/95">
             Built for the Multi-Chain Future
           </h1>
-          <p className="text-white/70 mt-2">
+          <p className="text-white/70 mt-2 text-sm md:text-base">
             Interact cross-chain without any complexity. Powered by NEAR MPC and Chain Signatures.
           </p>
         </div>
