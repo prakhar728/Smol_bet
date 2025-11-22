@@ -13,7 +13,6 @@ import ethAccount from "./routes/ethAccount";
 import agentAccount from "./routes/agentAccount";
 import transaction from "./routes/transaction";
 import smolBet from "./routes/smolBet";
-import testBet from "./routes/testBet";
 
 const app = new Hono();
 
@@ -28,7 +27,6 @@ app.route("/api/eth-account", ethAccount);
 app.route("/api/agent-account", agentAccount);
 app.route("/api/transaction", transaction);
 app.route("/api/smol-bet", smolBet);
-app.route("/api/testbet", testBet);
 
 // Start the server
 const port = Number(process.env.PORT || "3000");

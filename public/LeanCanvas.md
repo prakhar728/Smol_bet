@@ -58,7 +58,7 @@ Smol Bet turns casual X posts into trustless, onchain wagers — enforced by AI 
 ## 5. Channels
 
 - **Community building:** Grow and engage crypto-native audiences on X, Farcaster, and Telegram. Use memes, retweets, and community-led bet threads to foster virality.
-- **Social media:** Leverage the @funnyorfud bot on X to create, settle, and amplify bets in public threads. Encourage tagging, reposts, and automated replies to boost visibility.
+- **Social media:** Leverage the @smol_bet bot on X to create, settle, and amplify bets in public threads. Encourage tagging, reposts, and automated replies to boost visibility.
 - **DeFi/Web3 platforms:** Integrate with tools like Bankr, Privy, or Base-native dashboards to allow users to fund and track bets directly from their wallets.
 - **Partnerships:**  
   Collaborate with aligned protocols and platforms to enhance visibility, user acquisition, and composability:
